@@ -9,7 +9,6 @@ SETUP SCRIPT FOR IMPORTS, FUNCTION DECLARATION, GLOBAL VARIABLES, ETC
     'About Us',
     'Team',
     'Services',
-    'Blog',
     'Contact Us',
   ]
 </script>
@@ -54,7 +53,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
                 class="mt-auto"
                 append-icon="mdi-chevron-right"
                 color="blue-lighten-2"
-                text="Register"
+                text="Register a Club"
                 variant="outlined"
                 width="300"
                 ></v-btn>
@@ -84,7 +83,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
         <v-row>
           <v-col>
             <v-card 
-            class = "mt-15 ml-15 rounded-xl"
+            class = "mt-15 ml-15 mr-10 rounded-xl"
             height="300"
             width="400"
             elevation="20"
@@ -98,15 +97,15 @@ MAIN PAGE STRUCTURE BEGINS HERE
             </v-card>
           </v-col>
           <v-col>
-            <v-card class="mt-15 bg-white" flat color="transparent" height="300">
-              <v-card-title>
+            <v-card class="mt-15 mr-10 ml-10 bg-white" flat color="transparent" height="300">
+              <v-card-title class="text-center rounded-xl bg-primary">
                 <h1>Events</h1>
               </v-card-title>
-              <v-card-text class="bg-surface mt-10 mr-10">
+              <v-card-text class="bg-surface mt-10 text-center">
                 <P>Celebrate Pack culture through events hosted by clubs and organizations. View available and upcoming events and RSVP here!
                 </P>
               </v-card-text>
-              <v-card-actions class="mr-10 mt-10">
+              <v-card-actions class="mt-10 justify-center">
                 <v-btn
                   class="mt-auto rounded-lg"
                   variant="outlined"
@@ -124,15 +123,15 @@ MAIN PAGE STRUCTURE BEGINS HERE
       <v-container fluid>
         <v-row>
           <v-col>
-            <v-card class="mt-15 ml-15 mr-15 bg-white" flat color="transparent" height="300">
-              <v-card-title>
-                <h1>Clubs and Organizations</h1>
+            <v-card class="mt-15 ml-10 mr-10 bg-white" flat color="transparent" height="300">
+              <v-card-title class="bg-primary rounded-xl text-center">
+                <h1>Clubs and Orgs</h1>
               </v-card-title>
-              <v-card-text class="bg-surface mt-10 text-right">
+              <v-card-text class="bg-surface mt-10 text-center">
                 <P>Find fun, friends, and your own Pack pride through clubs and organizations on campus. 
                 </P>
               </v-card-text>
-              <v-card-actions class="mt-10 justify-end">
+              <v-card-actions class="mt-10 justify-center">
                 <v-btn
                   class="mt-auto rounded-lg"
                   variant="outlined"
@@ -147,7 +146,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
           </v-col>
           <v-col>
             <v-card 
-              class = "mt-15 ml-10 rounded-xl" 
+              class = "mt-15 ml-15 rounded-xl" 
               width="400" 
               height="300"
               elevation="20"
@@ -171,8 +170,6 @@ MAIN PAGE STRUCTURE BEGINS HERE
       variant="text"
       rounded
     ></v-btn>
-    
-
     <div class="flex-1-0-100 text-center mt-2">
       {{ new Date().getFullYear() }} — <strong>ClubHub</strong>
     </div>
