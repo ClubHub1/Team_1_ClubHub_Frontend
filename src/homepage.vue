@@ -124,6 +124,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
                   color="#041E42"
                   height="50"
                   width="350"
+                  to = '/clubs'
                 >
                   Explore Clubs and Organizations
                 </v-btn>
