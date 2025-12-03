@@ -19,7 +19,6 @@ const links = [
   'Contact Us',
 ]
 
-// ----- form + validation state -----
 const valid = ref(false)
 const email = ref('')
 const password = ref('')
@@ -43,11 +42,11 @@ const passwordRules = [
   },
 ]
 
-// ----- login state -----
+//login state
 const loading = ref(false)
 const error = ref('')
 
-// ----- handle form submit -----
+// handle form submit
 async function handleSubmit() {
   // if form validation fails, don't submit
   if (!valid.value) return
