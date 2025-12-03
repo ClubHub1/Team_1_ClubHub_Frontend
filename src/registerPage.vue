@@ -41,7 +41,7 @@ Rules for Form Inputs
           return 'E-mail is required.'
         },
         value => {
-          if (/.+@.+\..+/.test(value)) return true
+          if (/.+@unr+\..+/.test(value)) return true
 
           return 'E-mail must be valid.'
         },
@@ -134,7 +134,7 @@ Rules for Form Inputs
                         :rules="[...passwordRules.requirements, passwordRules.checkSame(rePassword, 'Passwords must match.')]"
                         label="Password"
                         required
-                        class="mr-6"
+                        class="mr-6 mb-5"
                       ></v-text-field>
                   </v-row>
 
