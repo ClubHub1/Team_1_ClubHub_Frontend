@@ -92,7 +92,7 @@ async function handleSubmit() {
             <v-card class = "mt-10" height="500" width="400" text>
 
               <v-card-title class="text-center">
-                <h1>Sign In</h1>
+                <h2>Sign In</h2>
               </v-card-title>
 
               <v-container class="ml-3">

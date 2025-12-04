@@ -1,6 +1,7 @@
 <script setup lang="ts">
+  import { ref } from 'vue'
   import { errorMessages } from 'vue/compiler-sfc';
-import Icon from './components/icon.vue'
+  import Icon from './components/icon.vue'
   const links = [
     'Home',
     'About Us',
@@ -8,14 +9,20 @@ import Icon from './components/icon.vue'
     'Services',
     'Contact Us',
   ]
-  methods: {
-  }
+  const registerForm = ''
+  const show1 = ref(false)
+  const show2 = ref(true)
     
 </script>
 
 Rules for Form Inputs
 <script lang="ts">
   export default {
+    methods: {
+      refreshPasswordRules(){
+        this.$refs.registerForm.validate()
+      },
+    },
     data: () => ({
       valid: false,
       firstname: '',
@@ -87,11 +94,11 @@ Rules for Form Inputs
             <v-card class = "mt-10" height="800" width="400" text>
 
               <v-card-title class="text-center">
-                <h1>Register</h1>
+                <h2>Register</h2>
               </v-card-title>
 
               <v-container class="ml-3">
-                <v-form v-model="valid" class="mt-7">
+                <v-form ref = "registerForm" v-model="valid" class="mt-7">
 
                   <v-row
                   >
@@ -129,22 +136,29 @@ Rules for Form Inputs
                   <v-row>
                       <v-text-field
                         v-model="password"
+                        :append-inner-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
                         hint="At least 8 characters, 1 uppercase, 1 number, 1 special character"
                         persistent-hint
                         :rules="[...passwordRules.requirements, passwordRules.checkSame(rePassword, 'Passwords must match.')]"
                         label="Password"
+                        :type="show1 ? 'text' : 'password'"
                         required
                         class="mr-6 mb-5"
+                        @click:append-inner="show1 = !show1"
                       ></v-text-field>
                   </v-row>
 
                   <v-row>
                       <v-text-field
                         v-model="rePassword"
+                        :append-inner-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
                         :rules="[...passwordRules.requirements, passwordRules.checkSame(rePassword, 'Passwords must match.')]"
                         label="Re-Enter Password"
+                        :type="show1 ? 'text' : 'password'"
                         required
+                        @input="refreshPasswordRules"
                         class="mr-6"
+                        @click:append-inner="show1 = !show1"
                       ></v-text-field>
                   </v-row>
 
@@ -159,7 +173,7 @@ Rules for Form Inputs
                   </v-row>
 
                   <v-row class="justify-center mt-6">
-                    <p>Don't have an account? <router-link to="/register">Register Here!</router-link> </p>
+                    <p>Already have an account? <router-link to="/login">Sign in here.</router-link> </p>
                   </v-row>
 
                 </v-form>
