@@ -94,7 +94,7 @@ Rules for Form Inputs
             <v-card class = "mt-10" height="800" width="400" text>
 
               <v-card-title class="text-center">
-                <h2>Register</h2>
+                <h2>Create an Account</h2>
               </v-card-title>
 
               <v-container class="ml-3">

@@ -16,6 +16,7 @@ import LoginPage from './loginPage.vue'
 import EventsPage from './eventsPage.vue'
 import ClubsPage from './clubsPage.vue'
 import RegisterPage from './registerPage.vue'
+import RegisterClub from './registerClub.vue'
 
 //import fonts
 import '@/plugins/fontSources'
@@ -31,7 +32,8 @@ const routes = [
   { path: '/login', component: LoginPage },
   { path: '/events', component: EventsPage},
   { path: '/clubs', component: ClubsPage},
-  { path: '/register', component: RegisterPage}
+  { path: '/register', component: RegisterPage},
+  { path: '/registerClub', component: RegisterClub}
 ]
 
 export const router = createRouter({

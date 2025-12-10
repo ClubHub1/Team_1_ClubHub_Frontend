@@ -38,7 +38,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
                 class="mt-auto"
                 append-icon="mdi-chevron-right"
                 variant="flat"
-                text="Register a Club"
+                text="Register Today"
                 width="300"
                 color="#041E42"
                 to='/register'
@@ -109,7 +109,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
       <v-container fluid>
         <v-row>
           <v-col>
-            <v-card class="mt-15 ml-10 mr-10 bg-white" flat color="transparent" height="300">
+            <v-card class="mt-15 ml-15 bg-white" flat color="transparent" height="300">
               <v-card-title class="bg-primary rounded-xl text-center">
                 <h1>Clubs and Orgs</h1>
               </v-card-title>
@@ -131,9 +131,12 @@ MAIN PAGE STRUCTURE BEGINS HERE
               </v-card-actions>
             </v-card>
           </v-col>
+          <v-col cols="1">
+
+          </v-col>
           <v-col>
             <v-card 
-              class = "mt-15 ml-15 rounded-xl" 
+              class = "mt-15 ml-16 rounded-xl" 
               width="400" 
               height="300"
               elevation="20"

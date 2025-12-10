@@ -29,6 +29,8 @@ Main Home Site Structure, Mounted on initialization
         'Services',
         'Contact Us',
     ]
+
+    router.push('/')
 </script>
 
 <template>
@@ -39,7 +41,7 @@ Main Home Site Structure, Mounted on initialization
             <v-icon @click="iconClicked" icon = "$chLogo" size=65 to="/"/>
             <v-img 
             class= "mt-3" 
-            src=src/assets/clubhubText.png 
+            src=src/assets/clubhubText.png
             cover 
             :width="200" 
             :height="200"
