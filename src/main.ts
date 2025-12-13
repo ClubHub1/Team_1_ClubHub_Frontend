@@ -18,6 +18,18 @@ import ClubsPage from './clubsPage.vue'
 import RegisterPage from './registerPage.vue'
 import RegisterClub from './registerClub.vue'
 
+//router to dashboard pages
+// import Dashboard from './dashboard.vue'
+// import Events from './dashboardPages/events.vue'
+// import Clubs from './dashboardPages/clubs.vue'
+// import Profile from './dashboardPages/profile.vue'
+// import Tasks from './dashboardPages/tasks.vue'
+// import Forms from './dashboardPages/forms.vue'
+// import Finances from './dashboardPages/finances.vue'
+// import Members from './dashboardPages/members.vue'
+// import Settings from './dashboardPages/settings.vue'
+
+
 //Import Pinia instance
 import { pinia } from './modules/pinia'
 
@@ -76,7 +88,7 @@ const app = createApp(App);
 
 app.use(vuetify);
 app.use(router);
-app.use(pinia);
+//app.use(pinia);
 
 app.mount('#app');
 
