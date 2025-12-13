@@ -18,6 +18,9 @@ import ClubsPage from './clubsPage.vue'
 import RegisterPage from './registerPage.vue'
 import RegisterClub from './registerClub.vue'
 
+//Import Pinia instance
+import { pinia } from './modules/pinia'
+
 //import fonts
 import '@/plugins/fontSources'
 
@@ -73,6 +76,7 @@ const app = createApp(App);
 
 app.use(vuetify);
 app.use(router);
+app.use(pinia);
 
 app.mount('#app');
 

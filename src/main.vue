@@ -36,7 +36,7 @@ Main Home Site Structure, Mounted on initialization
 <template>
     <v-app>
         <!-- App bar displayed at the top of the page -->
-        <v-app-bar :elevation="6" color=#B2B2B2>
+        <v-app-bar :elevation="6" color=#4E4E4E scroll-behavior="hide">
         <template v-slot:prepend>
             <v-icon @click="iconClicked" icon = "$chLogo" size=65 to="/"/>
             <v-img 

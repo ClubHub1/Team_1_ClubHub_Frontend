@@ -5,6 +5,12 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import vuetify from 'vite-plugin-vuetify'
+// vite.config.ts
+
+//Setting up autoImport for pinia
+import AutoImport from 'unplugin-auto-import/vite'
+
+import { feathersPiniaAutoImport } from 'feathers-pinia'
 
 
 vuetify({
@@ -20,6 +26,21 @@ export default defineConfig({
     vueJsx(),
     vueDevTools(),
     vuetify(),
+    AutoImport({ 
+    /* options */ 
+     imports: [
+        'vue',
+        'vue-router',
+        'vue-i18n',
+        'vue/macros',
+        '@vueuse/head',
+        '@vueuse/core',
+        feathersPiniaAutoImport,
+      ],
+      dts: 'src/auto-imports.d.ts',
+      dirs: ['src/composables'],
+      vueTemplate: true,
+    }),
   ],
   //base: '/ClubHub1/Team_1_ClubHub/',
   resolve: {

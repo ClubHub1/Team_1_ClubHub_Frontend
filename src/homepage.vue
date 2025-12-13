@@ -55,6 +55,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
               color=#041E42
               height="100"
               rounded="0"
+              transition
             >
               <v-card-title>
                   <div class="text-center mt-5 font-italic">
