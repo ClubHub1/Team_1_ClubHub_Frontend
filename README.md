@@ -55,3 +55,9 @@ npm run build
 ```sh
 npm run test:unit
 ```
+
+### Run ESLint Checker (code accessibility checker)
+
+```sh
+npm run lint
+```

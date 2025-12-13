@@ -54,33 +54,31 @@
                                     hide-details></v-text-field>
                               </v-col>
                         </v-row>
+                        <v-row class="mt-6">
+                              <v-col cols="12" md="3">
+                                    <v-card class="pa-4" elevation="2">
+                                          <h3 class="text-h6">Filters</h3>
+                                          <v-divider class="my-3"></v-divider>
 
-                        <v-col cols="12" md="3">
-                              <v-card class="pa-4" elevation="2">
-                                    <h3 class="text-h6">Filters</h3>
-                                    <v-divider class="my-3"></v-divider>
+                                          <v-autocomplete
+                                          v-model="selectedTags"
+                                          :items="allTags"
+                                          multiple
+                                          chips
+                                          clearable
+                                          class="mt-4"
+                                          label="Filter by Tags"></v-autocomplete>
+                                    </v-card>
+                              </v-col>
 
-                                    <v-autocomplete
-                                    v-model="selectedTags"
-                                    :items="allTags"
-                                    multiple
-                                    chips
-                                    clearable
-                                    class="mt-4"
-                                    label="Filter by Tags"></v-autocomplete>
-                              </v-card>
-                        </v-col>
-
-                        <v-col cols="12" md="9">
-                              <v-data-table
-                              :headers="headers"
-                              :items="filteredItems"
-                              :search="searchQuery"
-                              class="elevation-2"></v-data-table>
-                        </v-col>
-
-                            
-                        
+                              <v-col cols="12" md="9">
+                                    <v-data-table
+                                    :headers="headers"
+                                    :items="filteredItems"
+                                    :search="searchQuery"
+                                    class="elevation-2"></v-data-table>
+                              </v-col>
+                        </v-row> 
                   </v-container>
             </v-main>
       </v-app>
