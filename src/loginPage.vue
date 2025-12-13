@@ -3,6 +3,11 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from './components/icon.vue'
 import { login } from '@/services/auth'   // uses src/services/auth.ts
+import { _ } from '@feathersjs/commons'
+import { useAuthStore } from './stores/auth'
+
+//Creates AuthStore object for Authentication
+const authStore = useAuthStore()
 
 const router = useRouter()
 
@@ -10,14 +15,6 @@ function iconClicked() {
   // navigate back to homepage (change path if yours is different)
   router.push('/')
 }
-
-const links = [
-  'Home',
-  'About Us',
-  'Team',
-  'Services',
-  'Contact Us',
-]
 
 const valid = ref(false)
 const email = ref('')
@@ -55,17 +52,28 @@ async function handleSubmit() {
   loading.value = true
 
   try {
-    const data = await login(email.value, password.value)
+    console.log('trying login, please wait')
+    authStore.clearError()
+    await authStore.authenticate({
+      strategy: 'local',
+      email: email.value,
+      password: password.value,
+    });
+
+    const redirectTo = authStore.loginRedirect || '/dashboard'
+    authStore.loginRedirect = null
 
     // Save user/orgs for later pages if you want
     // localStorage.setItem('user', JSON.stringify(data.user))
     // localStorage.setItem('organizations', JSON.stringify(data.organizations))
 
     // After successful login, send them somewhere (change route as needed)
-    router.push('/homepage') // or '/dashboard' once you have one
+    if(authStore.isInitDone){
+      router.push(redirectTo)
+    }
   } catch (e: any) {
     error.value =
-      e?.response?.data?.message ||
+      authStore.error.message ||
       'Login failed. Please check your email and password.'
   } finally {
     loading.value = false
@@ -120,9 +128,9 @@ async function handleSubmit() {
                   </v-row>
 
                   <!-- error from backend -->
-                  <v-row v-if="error" class="mt-3">
+                  <v-row v-if="authStore.error" class="mt-3">
                     <v-alert type="error" variant="tonal" class="mr-6">
-                      {{ error }}
+                      {{ authStore.error.message }}
                     </v-alert>
                   </v-row>
 

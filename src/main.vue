@@ -18,7 +18,6 @@ Main Home Site Structure, Mounted on initialization
     })
 
     function iconClicked() {
-        //Future implementation will direct user back to homepage when CH logo is clicked
         router.push('/')
     }
     

@@ -1,16 +1,6 @@
 SETUP SCRIPT FOR IMPORTS, FUNCTION DECLARATION, GLOBAL VARIABLES, ETC
 <script setup lang="ts">
   import Icon from './components/icon.vue'
-  function iconClicked() {
-    //Future implementation will direct user back to homepage when CH logo is clicked
-  }
-  const links = [
-    'Home',
-    'About Us',
-    'Team',
-    'Services',
-    'Contact Us',
-  ]
 </script>
 
 

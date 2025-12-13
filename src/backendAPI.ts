@@ -2,9 +2,10 @@
 import { createClient } from 'CHBackend'
 import socketio from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
+import { pinia } from './modules/pinia'
 
 
-const host = import.meta.env.VITE_MY_API_URL as string || 'http://backend:3030'
+const host = 'http://localhost:3030'
 const socket = io(host, { transports: ['websocket'] })
 
 const feathersClient = createClient(socketio(socket), { storage: window.localStorage })
