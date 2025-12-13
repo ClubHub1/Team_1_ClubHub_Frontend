@@ -9,15 +9,6 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
-//router
-import { createWebHistory, createRouter } from 'vue-router'
-import HomePage from './homepage.vue'
-import LoginPage from './loginPage.vue'
-import EventsPage from './eventsPage.vue'
-import ClubsPage from './clubsPage.vue'
-import RegisterPage from './registerPage.vue'
-import RegisterClub from './registerClub.vue'
-
 //Import Pinia instance
 import { pinia } from './modules/pinia'
 
@@ -30,13 +21,24 @@ import '@/styles/main.scss'
 //Importing custom clubhub logo svg icon
 import chLogoComponent from './components/icon.vue'
 
+//router imports
+import { createWebHistory, createRouter } from 'vue-router'
+import HomePage from './homepage.vue'
+import LoginPage from './loginPage.vue'
+import EventsPage from './eventsPage.vue'
+import ClubsPage from './clubsPage.vue'
+import RegisterPage from './registerPage.vue'
+import RegisterClub from './registerClub.vue'
+import Dashboard from './dashboard.vue'
+
 const routes = [
   { path: '/', component: HomePage },
   { path: '/login', component: LoginPage },
   { path: '/events', component: EventsPage},
   { path: '/clubs', component: ClubsPage},
   { path: '/register', component: RegisterPage},
-  { path: '/registerClub', component: RegisterClub}
+  { path: '/registerClub', component: RegisterClub},
+  { path: '/dashboard', component: Dashboard}
 ]
 
 export const router = createRouter({
@@ -74,9 +76,10 @@ const vuetify = createVuetify({
 
 const app = createApp(App);
 
+//Plugins
 app.use(vuetify);
-app.use(router);
 app.use(pinia);
+app.use(router);
 
 app.mount('#app');
 
