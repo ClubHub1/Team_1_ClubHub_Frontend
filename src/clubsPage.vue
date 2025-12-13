@@ -74,7 +74,7 @@
                               <v-col cols="12" md="9">
                                     <v-data-table
                                     :headers="headers"
-                                    :items="clubs"
+                                    :items="filteredItems"
                                     :search="searchQuery"
                                     class="elevation-2"></v-data-table>
                               </v-col>

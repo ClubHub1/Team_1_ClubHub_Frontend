@@ -6,8 +6,8 @@
 // biome-ignore lint: disable
 export {}
 declare global {
-  const $: typeof import('vue/macros').$
   const $$: typeof import('vue/macros').$$
+  const $: typeof import('vue/macros').$
   const $computed: typeof import('vue/macros').$computed
   const $customRef: typeof import('vue/macros').$customRef
   const $ref: typeof import('vue/macros').$ref
