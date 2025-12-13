@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import DashboardGrid from '@/components/dashboard/dashboardGrid.vue'
 import DashboardSection from '@/components/dashboard/dashboardSection.vue'
 
-import EventList from '@/components/events/eventList.vue'
+import EventList from '@/components/dashboard/eventList.vue'
 import TaskList from '@/components/dashboard/taskList.vue'
 import NotificationList from '@/components/dashboard/notificationList.vue'
 </script>

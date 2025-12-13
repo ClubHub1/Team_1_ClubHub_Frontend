@@ -1,5 +1,5 @@
 <script setup>
-    import EventCard from '@/components/events/eventCard.vue'
+    import EventCard from '@/components/dashboard/eventCard.vue'
     import EmptyState from '@/components/dashboard/emptyState.vue'
     //MOCK DATA - to be replaced with API call
     const events = [

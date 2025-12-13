@@ -1,5 +1,5 @@
 <script setup>
-    import TopNav from './TopNav.vue'
+    import TopNav from '@/components/TopNav.vue'
 </script>
 
 <template>
