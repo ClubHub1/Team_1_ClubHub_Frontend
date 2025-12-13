@@ -2,13 +2,7 @@
   import { ref } from 'vue'
   import { errorMessages } from 'vue/compiler-sfc';
   import Icon from './components/icon.vue'
-  const links = [
-    'Home',
-    'About Us',
-    'Team',
-    'Services',
-    'Contact Us',
-  ]
+  import { validateHeaderName } from 'http';
   const registerForm = ''
   const show1 = ref(false)
   const show2 = ref(true)
@@ -17,7 +11,12 @@
 
 Rules for Form Inputs
 <script lang="ts">
+
+  //test for valid user input
+  const valid = ref(false)
+
   export default {
+
     methods: {
       refreshPasswordRules(){
         this.$refs.registerForm.validate()

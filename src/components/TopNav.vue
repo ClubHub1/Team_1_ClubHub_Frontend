@@ -1,11 +1,11 @@
 <script setup lang="ts">
-  import Icon from '@/assets/clubhub_logo.png'
+  import Icon from '../assets/clubhub_logo.png'
 </script>
 
 <template>
   <nav class="top-nav">
     <div class="nav-left">
-      <img src= {Icon} alt="ClubHub Logo" class="logo" />
+      <v-icon icon = "$chLogo" size=65 to="/"/>
     </div>
 
     <ul class="nav-links">
