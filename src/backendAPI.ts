@@ -8,7 +8,7 @@ import { pinia } from './modules/pinia'
 const host = 'http://localhost:3030'
 const socket = io(host, { transports: ['websocket'] })
 
-const feathersClient = createClient(socketio(socket), { storage: window.localStorage })
+export const feathersClient = createClient(socketio(socket), { storage: window.localStorage })
 
 // src/feathers.ts
 export const api = createPiniaClient(feathersClient, {

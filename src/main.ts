@@ -77,8 +77,8 @@ const vuetify = createVuetify({
 const app = createApp(App);
 
 //Plugins
-app.use(vuetify);
 app.use(pinia);
+app.use(vuetify);
 app.use(router);
 
 app.mount('#app');
