@@ -57,10 +57,9 @@ MAIN PAGE STRUCTURE BEGINS HERE
         </v-row>
       </v-container>
       <v-container fluid>
-        <v-row>
-          <v-col>
+        <v-row class="d-flex justify-center">
             <v-card 
-            class = "mt-15 ml-15 mr-10 rounded-xl"
+            class = "mt-15 ml-15 mr-15 rounded-xl"
             height="300"
             width="400"
             elevation="20"
@@ -72,9 +71,8 @@ MAIN PAGE STRUCTURE BEGINS HERE
               cover
               ></v-img>
             </v-card>
-          </v-col>
-          <v-col>
-            <v-card class="mt-15 mr-10 ml-10 bg-white" flat color="transparent" height="300">
+
+            <v-card class="mt-15 mr-15 ml-15 bg-white" flat color="transparent" height="300" width="700">
               <v-card-title class="text-center rounded-xl bg-primary">
                 <h1>Events</h1>
               </v-card-title>
@@ -95,13 +93,13 @@ MAIN PAGE STRUCTURE BEGINS HERE
                 </v-btn>
               </v-card-actions>
             </v-card>
-          </v-col>
+  
         </v-row>
       </v-container>
+
       <v-container fluid>
-        <v-row>
-          <v-col>
-            <v-card class="mt-15 ml-15 bg-white" flat color="transparent" height="300">
+        <v-row class = "d-flex justify-center">
+            <v-card class="mt-15 ml-15 mr-15 bg-white" flat color="transparent" height="300" width="700">
               <v-card-title class="bg-primary rounded-xl text-center">
                 <h1>Clubs and Orgs</h1>
               </v-card-title>
@@ -122,13 +120,9 @@ MAIN PAGE STRUCTURE BEGINS HERE
                 </v-btn>
               </v-card-actions>
             </v-card>
-          </v-col>
-          <v-col cols="1">
 
-          </v-col>
-          <v-col>
             <v-card 
-              class = "mt-15 ml-16 rounded-xl" 
+              class = "mt-15 ml-15 mr-15 rounded-xl" 
               width="400" 
               height="300"
               elevation="20"
@@ -140,7 +134,6 @@ MAIN PAGE STRUCTURE BEGINS HERE
               src=src/assets/clubsOrgsImage.png
               ></v-img>
             </v-card>
-          </v-col>
         </v-row>
       </v-container>
     </v-main>

@@ -85,39 +85,46 @@
 
     try {
       console.log('trying registration, please wait')
+      const now = new Date()
+      const nowString = now.toISOString()
+      console.log(nowString)
       await feathersClient.service("User")._create({
         password: new_password.value,
         first_name: first_name.value,
         last_name: last_name.value,
         email: new_email.value,
         role: 'User',
-        created_at: '2024-01-09T06:15:28.384Z'
+        created_at: nowString
+        }
+      ).catch(err =>{
+        error.value = err.message
       })
-      console.log('Registration passed; trying login')
       authStore.clearError()
-      console.log(new_email.value)
-      console.log(new_password.value)
-      await authStore.authenticate({
-        strategy: 'local',
-        email: new_email.value,
-        password: new_password.value,
-      });
-
-      const redirectTo = authStore.loginRedirect || '/dashboard'
-      authStore.loginRedirect = null
-
+      console.log(error.value)
+      if(error.value == ''){
+        console.log("Trying login")
+        await authStore.authenticate({
+          strategy: 'local',
+          email: new_email.value,
+          password: new_password.value,
+        });
+        const redirectTo = authStore.loginRedirect || '/dashboard'
+        authStore.loginRedirect = null
       // Save user/orgs for later pages if you want
       // localStorage.setItem('user', JSON.stringify(data.user))
       // localStorage.setItem('organizations', JSON.stringify(data.organizations))
 
       // After successful login, send them somewhere (change route as needed)
-      if(authStore.isInitDone){
-        router.push(redirectTo)
+        if(authStore.isInitDone){
+          router.push(redirectTo)
+        }
       }
     } catch (e: any) {
-      error.value =
+      if(error.value == ''){
+        error.value =
         authStore.error.message ||
         'Login failed. Please check your email and password.'
+      }
     } finally {
       loading.value = false
     }
@@ -145,7 +152,7 @@ Method to auto-refresh form validity rules
       <v-container>
         <v-row justify="center">
           <v-column >
-            <v-card class = "bg-primary mt-10" height="800" width="400">
+            <v-card class = "bg-primary mt-10" :height="$vuetify.display.smAndDown ? 300 : 850" width="400">
               <v-card-title class="ml-3 mt-3 mb-10">
                 <h1>Let's take your <br/>
                 club to the next <br/> level.</h1>
@@ -153,7 +160,7 @@ Method to auto-refresh form validity rules
             </v-card>
           </v-column>
           <v-column>
-            <v-card class = "mt-10" height="800" width="400" text>
+            <v-card class = "mt-10" height="850" width="400" text>
 
               <v-card-title class="text-center">
                 <h2>Create an Account</h2>
@@ -224,9 +231,9 @@ Method to auto-refresh form validity rules
                   </v-row>
 
                   <!-- error from backend -->
-                  <v-row v-if="authStore.error" class="mt-3">
+                  <v-row v-if="error != ''" class="mt-3">
                     <v-alert type="error" variant="tonal" class="mr-6">
-                      {{ authStore.error.message }}
+                      {{ error }}
                     </v-alert>
                   </v-row>
 
