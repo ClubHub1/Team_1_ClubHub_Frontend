@@ -3,7 +3,7 @@
 </script>
 
 <template>
-    <TopNav />
+    
     <main class="dashboardContainer">
         <slot />
     </main>

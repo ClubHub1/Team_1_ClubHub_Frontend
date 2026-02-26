@@ -5,6 +5,7 @@ defineProps({
 })
 
 </script>
+
 <template>
   <section class="dashboard-section">
     <header class="section-header">
