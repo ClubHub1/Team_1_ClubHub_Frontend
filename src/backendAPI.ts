@@ -5,7 +5,7 @@ import io from 'socket.io-client'
 import { pinia } from './modules/pinia'
 
 
-const host = 'http://localhost:3030'
+const host = 'http://localhost:33223'
 const socket = io(host, { transports: ['websocket'] })
 
 export const feathersClient = createClient(socketio(socket), { storage: window.localStorage })
