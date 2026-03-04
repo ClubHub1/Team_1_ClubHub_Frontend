@@ -4,10 +4,11 @@ import { useRouter } from 'vue-router'
 import Icon from './components/icon.vue'
 import { login } from '@/services/auth'   // uses src/services/auth.ts
 import { useAuthStore } from './stores/auth'
-import { useUserStore } from './stores/service.User'
+import { feathersClient } from './backendAPI'
+import { storeToRefs } from 'pinia'
+import { useFeathers } from './composables/feathersCompose'
 
 //Creates AuthStore object for Authentication
-const userStore = useUserStore()
 const authStore = useAuthStore()
 
 const router = useRouter()
@@ -50,11 +51,14 @@ async function handleSubmit() {
   try {
     console.log('trying login, please wait')
     authStore.clearError()
-    await authStore.authenticate({
+    const res = await authStore.authenticate({
       strategy: 'local',
       email: email.value,
       password: password.value,
     });
+
+    console.log('login response', res)
+    console.log(res.User?.id)
 
     const redirectTo = authStore.loginRedirect || '/dashboard'
     authStore.loginRedirect = null
@@ -70,7 +74,6 @@ async function handleSubmit() {
       authStore.error.message ||
       'Login failed. Please check your email and password.'
   } finally {
-    console.log(authStore.user)
     loading.value = false
     if(authStore.isAuthenticated){
       router.push('/dashboard')

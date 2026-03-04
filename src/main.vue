@@ -71,7 +71,7 @@ Main Home Site Structure, Mounted on initialization
             </v-btn>
             
             <v-btn v-else append-icon="mdi-account" to="/login">
-                <span class="d-none d-md-inline">Login</span>
+                <span class="d-none d-sm-inline">Login</span>
             </v-btn>
 
             <v-btn class="ml-5" append-icon="mdi-home" to="/">

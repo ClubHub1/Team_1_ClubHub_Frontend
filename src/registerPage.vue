@@ -5,7 +5,6 @@
   import Icon from './components/icon.vue'
   import { validateHeaderName } from 'http';
   import { useAuthStore } from './stores/auth';
-  import { useUserStore } from './stores/service.User';
   import { feathersClient } from './backendAPI';
 
   const registerForm = ref(null)
@@ -16,7 +15,6 @@
 
   //Setup stores and logic for form submission
   const authStore = useAuthStore()
-  const userStore = useUserStore()
   const error = ref('')
   const loading = ref(false)
 

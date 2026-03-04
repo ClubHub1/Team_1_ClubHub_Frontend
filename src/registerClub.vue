@@ -6,12 +6,10 @@
     import { feathersClient } from './backendAPI';
     import { appendFile } from 'fs';
     import { useAuthStore } from './stores/auth';
-    import { useUserStore } from './stores/service.User';
     import { storeToRefs } from 'pinia';
 
     const registerForm = ref(null)
     const authStore = useAuthStore()
-    const userStore = useUserStore()
 
     //GET CURRENT USER FOR CLUBMEMBERSHIP CREATION
     const { user } = storeToRefs(authStore);
@@ -68,21 +66,23 @@
           ).catch(err =>{
             error.value = err.message
           });
+          console.log(newClub)
 
-          const currentUserId = userStore.user.id
-          console.log(currentUserId)
+          const res = await(authStore.reAuthenticate())
+          const userId = res.User?.id
           //If club creation succeeds, create new ClubMembership item designating the creating user as the president by default
           if(newClub){
             const newPresident = await feathersClient.service("ClubMembership")._create({
+              userid: userId,
               role: 'President',
               clubid: newClub.club_id,
-              userid: currentUserId,
               is_active: true,
               dues_paid: false
             }
             ).catch(err => {
               error.value = err.message
             })
+            console.log(newPresident)
           }
         } finally {
           loading.value = false

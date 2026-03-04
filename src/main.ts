@@ -78,11 +78,13 @@ const vuetify = createVuetify({
 
 const app = createApp(App);
 
+import { api } from './backendAPI'
+import { feathersClient } from './backendAPI'
+
 //Plugins
 app.use(pinia);
 app.use(vuetify);
 app.use(router);
-
 app.mount('#app');
 
 
