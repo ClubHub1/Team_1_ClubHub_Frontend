@@ -1,14 +1,14 @@
 <script setup>
-import DashboardLayout   from '@/components/dashboard/dashboardLayout.vue'
-import DashboardGrid     from '@/components/dashboard/dashboardGrid.vue'
-import DashboardSection  from '@/components/dashboard/dashboardSection.vue'
-import EventList         from '@/components/dashboard/eventList.vue'
-import TaskList          from '@/components/dashboard/taskList.vue'
-import NotificationList  from '@/components/dashboard/notificationList.vue'
+import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
+import DashboardGrid from '@/components/dashboard/dashboardGrid.vue'
+import DashboardSection from '@/components/dashboard/dashboardSection.vue'
+import EventList from '@/components/dashboard/eventList.vue'
+import TaskList from '@/components/dashboard/taskList.vue'
+import NotificationList from '@/components/dashboard/notificationList.vue'
 
 // HARDCODED - replace with user store / API data
 const name = 'Officer'
-const clubName    = 'Nevada Cyber Club'
+const clubName = 'Nevada Cyber Club'
 const currentDate = 'August 25, 2025'
 </script>
 
@@ -43,7 +43,6 @@ const currentDate = 'August 25, 2025'
 
     </v-row>
 
-    <!-- ── Dashboard sections ──────────────────────────────────── -->
     <DashboardGrid>
       <DashboardSection title="Events" :md="4">
         <EventList />

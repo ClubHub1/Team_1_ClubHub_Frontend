@@ -8,40 +8,28 @@ defineProps({
 </script>
 
 <template>
-  <div class="eventCard">
-    <div class="eventTitle">{{ clubEvent.title }}</div>
-    <button class="eventAction">Edit</button>
-  </div>
+  <v-card
+    color="grey-lighten-2"
+    rounded="lg"
+    elevation="0"
+    class="mb-2"
+  >
+    <v-card-text class="d-flex flex-column ga-2 pa-3">
+
+      <span class="text-body-1 font-weight-bold">
+        {{ clubEvent.title }}
+      </span>
+
+      <v-btn
+        variant="flat"
+        color="grey-darken-3"
+        size="small"
+        rounded="sm"
+        class="align-self-start"
+      >
+        Edit
+      </v-btn>
+
+    </v-card-text>
+  </v-card>
 </template>
-
-<style scoped>
-.eventCard {
-  background: #d3d0d0;
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.eventTitle {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.eventAction {
-  align-self: flex-start;
-  background: #333;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.eventAction:hover {
-  background: #555;
-}
-</style>
