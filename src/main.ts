@@ -30,6 +30,7 @@ import ClubsPage from './clubsPage.vue'
 import RegisterPage from './registerPage.vue'
 import RegisterClub from './registerClub.vue'
 import Dashboard from './dashboard.vue'
+import AboutPage from './aboutPage.vue'
 
 const routes = [
   { path: '/', component: HomePage },
@@ -38,7 +39,8 @@ const routes = [
   { path: '/clubs', component: ClubsPage},
   { path: '/register', component: RegisterPage},
   { path: '/registerClub', component: RegisterClub},
-  { path: '/dashboard', component: Dashboard}
+  { path: '/dashboard', component: Dashboard},
+  { path: '/about', component: AboutPage}
 ]
 
 export const router = createRouter({

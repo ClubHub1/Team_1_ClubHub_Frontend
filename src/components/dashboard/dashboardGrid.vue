@@ -1,5 +1,5 @@
 <template>
-    <div class="dashboardGrid">
-        <slot />
-    </div>
+  <v-row>
+    <slot />
+  </v-row>
 </template>

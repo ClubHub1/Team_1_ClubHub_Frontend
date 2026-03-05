@@ -1,10 +1,9 @@
-<script setup>
-    import TopNav from '@/components/TopNav.vue'
-</script>
-
 <template>
-    <TopNav />
-    <main class="dashboardContainer">
+  <v-app>
+    <v-main bg-color="grey-lighten-4">
+      <v-container max-width="900" class="py-8">
         <slot />
-    </main>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
