@@ -151,14 +151,13 @@ Method to auto-refresh form validity rules
 
       <v-container>
         <v-row justify="center">
-          <v-column >
+
             <v-card class = "bg-primary mt-10" :height="$vuetify.display.smAndDown ? 300 : 850" width="400">
-              <v-card-title class="ml-3 mt-3 mb-10">
-                <h1>Let's take your <br/>
-                club to the next <br/> level.</h1>
+              <v-card-title class="text-wrap ml-3 mt-3 mb-10" width="400">
+                <h1>Let's elevate your club experience.</h1>
               </v-card-title>
             </v-card>
-          </v-column>
+          
           <v-column>
             <v-card class = "mt-10" height="850" width="400" text>
 

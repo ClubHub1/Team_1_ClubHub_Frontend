@@ -3,18 +3,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from './components/icon.vue'
 import { login } from '@/services/auth'   // uses src/services/auth.ts
-import { _ } from '@feathersjs/commons'
 import { useAuthStore } from './stores/auth'
+import { useUserStore } from './stores/service.User'
 
 //Creates AuthStore object for Authentication
+const userStore = useUserStore()
 const authStore = useAuthStore()
 
 const router = useRouter()
-
-function iconClicked() {
-  // navigate back to homepage (change path if yours is different)
-  router.push('/')
-}
 
 const valid = ref(false)
 const email = ref('')
@@ -68,15 +64,17 @@ async function handleSubmit() {
     // localStorage.setItem('organizations', JSON.stringify(data.organizations))
 
     // After successful login, send them somewhere (change route as needed)
-    if(authStore.isInitDone){
-      router.push(redirectTo)
-    }
+
   } catch (e: any) {
     error.value =
       authStore.error.message ||
       'Login failed. Please check your email and password.'
   } finally {
+    console.log(authStore.user)
     loading.value = false
+    if(authStore.isAuthenticated){
+      router.push('/dashboard')
+    }
   }
 }
 
@@ -87,16 +85,13 @@ async function handleSubmit() {
     <v-main>
       <v-container>
         <v-row justify="center">
-          <v-col align-self="end" cols="4">
             <v-card class = "bg-primary mt-10" height="500" width="400">
               <v-card-title class="ml-3 mt-3 mb-10">
                 <h1>Welcome <br/>
                 Back.</h1>
               </v-card-title>
             </v-card>
-          </v-col>
 
-          <v-col cols="4">
             <v-card class = "mt-10" height="500" width="400" text>
               <v-card-title class="text-center">
                 <h2>Sign In</h2>
@@ -154,7 +149,6 @@ async function handleSubmit() {
                 </v-form>
               </v-container>
             </v-card>
-          </v-col>
         </v-row>
       </v-container>
     </v-main>
