@@ -31,16 +31,22 @@ import RegisterPage from './registerPage.vue'
 import RegisterClub from './registerClub.vue'
 import Dashboard from './dashboard.vue'
 import AboutPage from './aboutPage.vue'
+import PCardRequest from './pCardRequest.vue'
+import TravelRequest from './travelRequest.vue'
+import FinancesPage from './financesPage.vue'
 
 const routes = [
   { path: '/', component: HomePage },
   { path: '/login', component: LoginPage },
-  { path: '/events', component: EventsPage},
-  { path: '/clubs', component: ClubsPage},
-  { path: '/register', component: RegisterPage},
-  { path: '/registerClub', component: RegisterClub},
-  { path: '/dashboard', component: Dashboard},
-  { path: '/about', component: AboutPage}
+  { path: '/events', component: EventsPage },
+  { path: '/clubs', component: ClubsPage },
+  { path: '/register', component: RegisterPage },
+  { path: '/registerClub', component: RegisterClub },
+  { path: '/dashboard', component: Dashboard },
+  { path: '/about', component: AboutPage },
+  { path: '/dashboard/p-card-request', component: PCardRequest },
+  { path: '/dashboard/travel-request', component: TravelRequest },
+  { path: '/dashboard/finances', component: FinancesPage },
 ]
 
 export const router = createRouter({
@@ -53,7 +59,7 @@ const vuetify = createVuetify({
   directives,
   icons: {
     aliases:{
-        chLogo: chLogoComponent,
+      chLogo: chLogoComponent,
     },
     defaultSet: 'mdi',
     sets: {
@@ -84,5 +90,3 @@ app.use(vuetify);
 app.use(router);
 
 app.mount('#app');
-
-
