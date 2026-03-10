@@ -150,7 +150,7 @@ Method to auto-refresh form validity rules
       <v-container>
         <v-row justify="center">
 
-            <v-card class = "bg-primary mt-10" :height="$vuetify.display.smAndDown ? 300 : 850" width="400">
+            <v-card class = "bg-primary mt-10" :height="($vuetify.display.width<=822) ? 300 : 850" width="400">
               <v-card-title class="text-wrap ml-3 mt-3 mb-10" width="400">
                 <h1>Let's elevate your club experience.</h1>
               </v-card-title>

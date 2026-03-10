@@ -77,8 +77,8 @@ MAIN PAGE STRUCTURE BEGINS HERE
                 <h1>Events</h1>
               </v-card-title>
               <v-card-text class="bg-surface mt-10 text-center">
-                <P>Celebrate Pack culture through events hosted by clubs and organizations. View available and upcoming events and RSVP here!
-                </P>
+                <p>Celebrate Pack culture through events hosted by clubs and organizations. View available and upcoming events and RSVP here!
+                </p>
               </v-card-text>
               <v-card-actions class="mt-10 justify-center">
                 <v-btn
@@ -104,8 +104,8 @@ MAIN PAGE STRUCTURE BEGINS HERE
                 <h1>Clubs and Orgs</h1>
               </v-card-title>
               <v-card-text class="bg-surface mt-10 text-center">
-                <P>Find fun, friends, and your own Pack pride through clubs and organizations on campus. 
-                </P>
+                <p>Find fun, friends, and your own Pack pride through clubs and organizations on campus. 
+                </p>
               </v-card-text>
               <v-card-actions class="mt-10 justify-center">
                 <v-btn

@@ -7,10 +7,11 @@ import { useAuthStore } from './stores/auth'
 import { feathersClient } from './backendAPI'
 import { storeToRefs } from 'pinia'
 import { useFeathers } from './composables/feathersCompose'
+import useUserStore from './stores/user'
 
 //Creates AuthStore object for Authentication
 const authStore = useAuthStore()
-
+const userStore = useUserStore()
 const router = useRouter()
 
 const valid = ref(false)
@@ -59,6 +60,13 @@ async function handleSubmit() {
 
     console.log('login response', res)
     console.log(res.User?.id)
+    if(res){
+      userStore.setEmail(res.User?.email)
+      userStore.setId(res.User?.id)
+      userStore.setFirstName(res.User?.first_name)
+      userStore.setLastName(res.User?.last_name)
+    }
+    
 
     const redirectTo = authStore.loginRedirect || '/dashboard'
     authStore.loginRedirect = null
@@ -88,8 +96,8 @@ async function handleSubmit() {
     <v-main>
       <v-container>
         <v-row justify="center">
-            <v-card class = "bg-primary mt-10" height="500" width="400">
-              <v-card-title class="ml-3 mt-3 mb-10">
+            <v-card class = "bg-primary mt-10" :height="($vuetify.display.width<=822) ? 300 : 500" width="400">
+              <v-card-title class="ml-3 mt-3">
                 <h1>Welcome <br/>
                 Back.</h1>
               </v-card-title>

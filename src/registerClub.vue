@@ -7,13 +7,14 @@
     import { appendFile } from 'fs';
     import { useAuthStore } from './stores/auth';
     import { storeToRefs } from 'pinia';
+    import { useClubStore } from './stores/clubStore';
+    import { useUserStore } from './stores/user';
 
     const registerForm = ref(null)
     const authStore = useAuthStore()
-
-    //GET CURRENT USER FOR CLUBMEMBERSHIP CREATION
-    const { user } = storeToRefs(authStore);
-
+    const clubStore = useClubStore()
+    const userStore = useUserStore()
+    
     const router = useRouter()
 
     //Setup stores and logic for form submission
@@ -65,15 +66,20 @@
           }
           ).catch(err =>{
             error.value = err.message
+            console.log('error caught; ', error)
           });
           console.log(newClub)
+          if(newClub){
+            clubStore.setDescription(newClub.description)
+            clubStore.setId(newClub.club_id)
+            clubStore.setName(newClub.name)
+          }
+          
 
-          const res = await(authStore.reAuthenticate())
-          const userId = res.User?.id
           //If club creation succeeds, create new ClubMembership item designating the creating user as the president by default
           if(newClub){
             const newPresident = await feathersClient.service("ClubMembership")._create({
-              userid: userId,
+              userid: userStore.id,
               role: 'President',
               clubid: newClub.club_id,
               is_active: true,
@@ -81,11 +87,13 @@
             }
             ).catch(err => {
               error.value = err.message
+              console.log('error caught; ', error)
             })
             console.log(newPresident)
           }
         } finally {
           loading.value = false
+          router.push('/clubDash')
         }
     }
         

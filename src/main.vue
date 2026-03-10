@@ -62,29 +62,29 @@ Main Home Site Structure, Mounted on initialization
         <v-app-bar-title class="text-h4 font-weight-bold"></v-app-bar-title>
 
         <template v-slot:append>
-            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-view-dashboard" class = "mr-5" to="/dashboard">
+            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-view-dashboard" class = "mr-5" to="/dashboard" rounded="pill">
                 <span class="d-none d-md-inline">Dashboard</span>
             </v-btn>
 
-            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-account" to="/">
+            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-account" to="/" rounded="pill">
                 <span class="d-none d-md-inline">Profile</span>
             </v-btn>
             
-            <v-btn v-else append-icon="mdi-account" to="/login">
+            <v-btn v-else append-icon="mdi-account" to="/login" rounded="pill">
                 <span class="d-none d-sm-inline">Login</span>
             </v-btn>
 
-            <v-btn class="ml-5" append-icon="mdi-home" to="/">
+            <v-btn class="ml-5" append-icon="mdi-home" to="/" rounded="pill">
                 <span class="d-none d-md-inline">Home</span>
             </v-btn>
 
-            <v-menu>
+            <v-menu v-if="authStore.isAuthenticated">
                 <template v-slot:activator="{ props }">
                     <v-btn class = "ml-5" icon="mdi-dots-vertical" v-bind="props"></v-btn>
                 </template>
 
                 <v-list>
-                    <v-list-item @click="logoutUser" append-icon="mdi-account">
+                    <v-list-item @click="logoutUser" append-icon="mdi-logout">
                         <v-list-item-title>Logout</v-list-item-title>
                     </v-list-item>
                 </v-list>
@@ -94,11 +94,6 @@ Main Home Site Structure, Mounted on initialization
 
         </v-app-bar>
         <v-main>
-            <v-card v-if="authStore.isAuthenticated">
-                <v-card-text>
-                    Authenticated
-                </v-card-text>
-            </v-card>
             <RouterView></RouterView>
             <!-- ROUTER-RENDERED CONTENT DISPLAYED HERE -->
         </v-main>
