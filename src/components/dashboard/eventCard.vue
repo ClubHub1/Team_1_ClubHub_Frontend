@@ -1,23 +1,35 @@
 <script setup>
-    const props = defineProps({
-        clubEvent: Object
-    })
-
-    /* const formatDate = new Date(props.clubEvent.date).toLocaleDateString(
-        'en-US',
-        { year: 'numeric', month: 'long', day: 'numeric' }
-    )*/
+defineProps({
+  clubEvent: {
+    type: Object,
+    required: true
+  }
+})
 </script>
 
 <template>
-    <div class="eventCard">
-        <!-- <div class="eventMain">
-            <div class="eventTitle">{{ clubEvent.title }}</div>
-            <div class="eventDetails">
-                <div class="eventTime">{{ clubEvent.time }}</div>
-                <div class="eventLocation">{{ clubEvent.location }}</div>
-            </div>
-        </div> -->
-    </div>
-    <button class="eventAction">Edit</button>
+  <v-card
+    color="grey-lighten-2"
+    rounded="lg"
+    elevation="0"
+    class="mb-2"
+  >
+    <v-card-text class="d-flex flex-column ga-2 pa-3">
+
+      <span class="text-body-1 font-weight-bold">
+        {{ clubEvent.title }}
+      </span>
+
+      <v-btn
+        variant="flat"
+        color="grey-darken-3"
+        size="small"
+        rounded="sm"
+        class="align-self-start"
+      >
+        Edit
+      </v-btn>
+
+    </v-card-text>
+  </v-card>
 </template>

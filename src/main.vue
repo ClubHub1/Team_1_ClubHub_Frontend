@@ -22,11 +22,6 @@ Main Home Site Structure, Mounted on initialization
     function iconClicked() {
         router.push('/')
     }
-
-    async function logoutUser() {
-        await(authStore.logout())
-        router.push('/')
-    }
     
     const links = {
         homeLink: {
@@ -50,7 +45,7 @@ Main Home Site Structure, Mounted on initialization
             <template v-slot:prepend>
                 <v-icon @click="iconClicked" icon = "$chLogo" size=65 to="/"/>
                 <v-img 
-                class= "mt-3 d-none d-sm-inline" 
+                class= "mt-3" 
                 src=src/assets/clubhubText.png
                 cover 
                 :width="200" 
@@ -62,34 +57,15 @@ Main Home Site Structure, Mounted on initialization
         <v-app-bar-title class="text-h4 font-weight-bold"></v-app-bar-title>
 
         <template v-slot:append>
-            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-view-dashboard" class = "mr-5" to="/dashboard">
-                <span class="d-none d-md-inline">Dashboard</span>
-            </v-btn>
+            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-view-dashboard" class = "mr-5" to="/dashboard">Dashboard</v-btn>
 
-            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-account" to="/">
-                <span class="d-none d-md-inline">Profile</span>
-            </v-btn>
+            <v-btn v-if="authStore.isAuthenticated" append-icon="mdi-account" to="/">Profile</v-btn>
             
-            <v-btn v-else append-icon="mdi-account" to="/login">
-                <span class="d-none d-md-inline">Login</span>
-            </v-btn>
+            <v-btn v-else append-icon="mdi-account" to="/login">Login</v-btn>
 
-            <v-btn class="ml-5" append-icon="mdi-home" to="/">
-                <span class="d-none d-md-inline">Home</span>
-            </v-btn>
+            <v-btn class="ml-5" append-icon="mdi-home" to="/">Home</v-btn>
 
-            <v-menu>
-                <template v-slot:activator="{ props }">
-                    <v-btn class = "ml-5" icon="mdi-dots-vertical" v-bind="props"></v-btn>
-                </template>
-
-                <v-list>
-                    <v-list-item @click="logoutUser" append-icon="mdi-account">
-                        <v-list-item-title>Logout</v-list-item-title>
-                    </v-list-item>
-                </v-list>
-            </v-menu>
-            
+            <v-btn icon="mdi-dots-vertical"></v-btn>
         </template>
 
         </v-app-bar>
