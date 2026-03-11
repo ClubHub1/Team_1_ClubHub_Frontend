@@ -8,13 +8,20 @@ const props = defineProps({
 
 const badgeColor = (() => {
   const d = props.task.daysUntilDue
-  if (d <= 1) return 'error'           // red
-  if (d <= 5) return 'warning'         // yellow/amber
-  if (d <= 7) return 'success'         // green
+  if (d === 'overdue') return 'error'
+  if (typeof d === 'number') {
+    if (d <= 1) return 'error'           // red
+    if (d <= 5) return 'warning'         // yellow/amber
+    if (d <= 7) return 'success'         // green
+  }
   return 'info'                        // blue
 })()
 
-const dueLabel = `Due in ${props.task.daysUntilDue} day${props.task.daysUntilDue === 1 ? '' : 's'}`
+const dueLabel = (() => {
+  const d = props.task.daysUntilDue
+  if (d === 'overdue') return 'Overdue'
+  return `Due in ${d} day${d === 1 ? '' : 's'}`
+})()
 </script>
 
 <template>
@@ -38,6 +45,7 @@ const dueLabel = `Due in ${props.task.daysUntilDue} day${props.task.daysUntilDue
       </div>
 
       <v-btn
+        class="ml-2"
         icon="mdi-arrow-right"
         variant="outlined"
         size="small"
