@@ -21,10 +21,10 @@ export async function getTasks(): Promise<Task[]> {
   }))
 }
 
-function calculateDaysUntilDue(dueDate: string): number {
+function calculateDaysUntilDue(dueDate: string): number | string {
   const due = new Date(dueDate)
   const now = new Date()
   const diffTime = due.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays
+  return diffDays < 0 ? 'overdue' : diffDays
 }
