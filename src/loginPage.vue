@@ -58,8 +58,8 @@ async function handleSubmit() {
       password: password.value,
     });
 
-    console.log('login response', res)
-    console.log(res.User?.id)
+    //console.log('login response', res)
+    //console.log(res.User?.id)
     if(res){
       userStore.setEmail(res.User?.email)
       userStore.setId(res.User?.id)

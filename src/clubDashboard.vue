@@ -225,7 +225,7 @@
     function cellPropHandler({item, column}){
         console.log(item, column)
         if (item.memberRole == 'President' && column.title == 'Role') {
-            return { class: 'bg-error rounded px-2 py-1 mt-2 mb-2 ml-3 mr-3' }; // Using a built-in Vuetify background color class
+            return { class: 'bg-error rounded px-2 py-1' }; // Using a built-in Vuetify background color class
         }
         return null;
     }
