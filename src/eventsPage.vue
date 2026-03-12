@@ -4,21 +4,21 @@ import { feathersClient } from '@/backendAPI'
 
 
 interface Club {
-      id:   number
+      id: number
       name: string
       tags: string[]
 }
 
 interface Event {
-      id:             number
-      club:           number
-      name:           string
-      description:    string
-      location:       string
+      id: number
+      club: number
+      name: string
+      description: string
+      location: string
       start_datetime: string
-      end_datetime:   string
-      clubName?:      string
-      clubTags?:      string[]
+      end_datetime: string
+      clubName?: string
+      clubTags?: string[]
 }
 
 const loading = ref(false)
@@ -36,8 +36,6 @@ const headers = [
     { title: 'Club',  key: 'clubName', sortable: true },
     { title: 'Date',  key: 'start_datetime', sortable: true },
 ]
-
-// ── Tag options ───────────────────────────────────────────────────────────────
 
 const allTags = [
     { label: 'Academic', value: 'academic' },
@@ -142,9 +140,9 @@ async function fetchEvents() {
 function applyFilters() { fetchEvents() }
 function clearFilters() {
       selectedTags.value = []
-      dateFrom.value     = ''
-      dateTo.value       = ''
-      searchQuery.value  = ''
+      dateFrom.value = ''
+      dateTo.value = ''
+      searchQuery.value = ''
       fetchEvents()
 }
 
