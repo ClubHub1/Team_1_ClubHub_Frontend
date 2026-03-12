@@ -2,7 +2,6 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from './components/icon.vue'
-import { feathersClient } from './backendAPI'
 
 const router = useRouter()
 
@@ -27,11 +26,9 @@ const headers = [
 onMounted(async () => {
   loading.value = true
   try {
-    const res = await feathersClient.service("Club").find()
-    console.log(res)
-    const data = res.data
-    clubs.value = Array.isArray(data) ? data : data ?? []
-
+    const res = await fetch('http://localhost:3030/Club?$limit=1000')
+    const data = await res.json()
+    clubs.value = Array.isArray(data) ? data : data.data ?? []
   } catch (e) {
     console.error('Failed to load clubs:', e)
   } finally {
