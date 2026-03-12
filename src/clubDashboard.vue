@@ -1,11 +1,11 @@
 <script setup lang="ts">
-    import { ref, reactive, computed, VueElement } from 'vue'
+    import { ref, reactive, computed, VueElement, onMounted } from 'vue'
     import { useAuthStore } from './stores/auth'
     import useClubStore from './stores/clubStore'
     import { feathersClient } from './backendAPI'
     import useMemberStore from './stores/memberStore'
-    import clubEventsPage from './clubEventsPage.vue'
     import useUserStore from './stores/user'
+    import { getTasks, type Task } from '@/services/tasks'
     import ClubEventsPage from './clubEventsPage.vue'
 
     const auth = useAuthStore()
@@ -34,8 +34,6 @@
             console.log('SERVER THREW ERROR RETRIEVING MEMBERSHIP ENTRY: ', err)
         })
 
-        //console.log(res)
-
         if(res){
             const memberInfo = res.data
             console.log('CURRENT MEMBERINFO: ', memberInfo[0].role, ' ', memberInfo[0].id)
@@ -58,7 +56,6 @@
 
         const userIds = []
 
-        
         if(memberRes){
             console.log(memberRes)
             const memberArray = memberRes.data
@@ -100,15 +97,8 @@
 
                 console.log(memberList)
             }
-
         }
-        
-        //console.log(memberInfo)
-
-
     }
-
-    
 
     const emailRules = [
         (value: string) => {
@@ -129,6 +119,8 @@
         { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
         { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
         { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['Advisor', 'President', 'Treasurer']},
+        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
         { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['Advisor', 'President']}
     ]
 
@@ -142,7 +134,6 @@
 
     const selected = ref('dashboard')
 
-    const eventForm = reactive({ title: '', date: '', location: '', description: '' })
     const announcementForm = reactive({ title: '', message: '' })
 
     const members = ref([])
@@ -154,16 +145,46 @@
 
     const balance = computed(() => transactions.value.reduce((s, t) => s + t.amount, 0))
 
-    function submitEvent() {
-        // TODO: wire to backend API
-        console.log('Create Event', { ...eventForm })
-        Object.assign(eventForm, { title: '', date: '', location: '', description: '' })
-    }
-
     function submitAnnouncement() {
         // TODO: wire to backend API
         console.log('Create Announcement', { ...announcementForm })
         Object.assign(announcementForm, { title: '', message: '' })
+    }
+
+    const taskForm = reactive({ title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
+    const taskFormValid = ref(false)
+    const taskFormLoading = ref(false)
+    const taskFormError = ref('')
+    const taskFormSuccess = ref(false)
+
+    const taskPriorities = ['Low', 'Medium', 'High']
+    const taskStatuses = ['Not Started', 'In Progress', 'Completed']
+
+    async function submitTask() {
+        if (!taskFormValid.value) return
+        taskFormLoading.value = true
+        taskFormError.value = ''
+        taskFormSuccess.value = false
+        try {
+            const now = new Date().toISOString()
+            await feathersClient.service('Task').create({
+                club: String(clubStore.id),
+                title: taskForm.title,
+                due_date: taskForm.due_date,
+                description: taskForm.description,
+                created_at: now,
+                updated_at: now,
+                priority: taskForm.priority,
+                status: taskForm.status,
+            })
+            taskFormSuccess.value = true
+            Object.assign(taskForm, { title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
+        } catch (err) {
+            taskFormError.value = 'Failed to create task. Please try again.'
+            console.error(err)
+        } finally {
+            taskFormLoading.value = false
+        }
     }
 
     function addTransaction() {
@@ -174,8 +195,6 @@
     function manageMember(id: number) {
         console.log('MANAGING MEMBER WITH MEMBERSHIP ID:', id)
     }
-
-
 
     async function addMember(){
         if (!valid.value) return
@@ -223,14 +242,42 @@
         } else {
             console.log("User does not exist in the system- check their email")
         }
-
     }
 
     function cellPropHandler({item, column}){
         if (item.memberRole == 'President' && column.title == 'Role') {
-            return { class: 'bg-error rounded px-2 py-1' }; // Using a built-in Vuetify background color class
+            return { class: 'bg-error rounded px-2 py-1' };
         }
         return null;
+    }
+
+    const tasks = ref<Task[]>([])
+    const tasksLoading = ref(false)
+    const tasksError = ref<string | null>(null)
+
+    const priorityColor: Record<string, string> = {
+        Low: 'green', Medium: 'blue', High: 'orange'
+    }
+    const statusColor: Record<string, string> = {
+        'Not Started': 'grey', 'In Progress': 'blue', 'Completed': 'green'
+    }
+
+    async function loadTasks() {
+        tasksLoading.value = true
+        tasksError.value = null
+        try {
+            tasks.value = await getTasks()
+        } catch (err) {
+            tasksError.value = 'Failed to load tasks.'
+            console.error(err)
+        } finally {
+            tasksLoading.value = false
+        }
+    }
+
+    function handleNavClick(sectionId: string) {
+        selected.value = sectionId
+        if (sectionId === 'tasks') loadTasks()
     }
 
 </script>
@@ -239,8 +286,14 @@
     <v-app>
         <v-navigation-drawer expand-on-hover permanent rail width="260" app>
             <v-list>
-
-                <v-list-item v-for="s in activeSections" :key="s.id" :value="s.id" @click="selected = s.id" :active="selected === s.id" :prepend-icon="s.icon">
+                <v-list-item
+                    v-for="s in activeSections"
+                    :key="s.id"
+                    :value="s.id"
+                    @click="handleNavClick(s.id)"
+                    :active="selected === s.id"
+                    :prepend-icon="s.icon"
+                >
                     <v-list-item-title>{{ s.label }}</v-list-item-title>
                 </v-list-item>
             </v-list>
@@ -252,8 +305,9 @@
 
         <v-main>
             <v-container class="pa-6">
+
                 <div v-if="selected === 'createEvent'">
-                        <club-events-page></club-events-page>
+                    <club-events-page></club-events-page>
                 </div>
 
                 <div v-if="selected === 'createAnnouncement'" class="mt-6">
@@ -289,7 +343,6 @@
                             Add Members
                         </v-btn>
                     </v-row>
-                    
                 </div>
 
                 <div v-if="selected === 'memberAdd'" class="mt-6">
@@ -306,88 +359,33 @@
                         </v-row>
 
                         <v-row>
-
                             <v-menu>
                                 <template v-slot:activator="{props}"> 
-                                    <v-btn
-                                        v-if="role == 'Select Role'"
-                                        v-bind="props"
-                                        color="primary"
-                                    >
-                                    {{ role }}
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="role == 'President'"
-                                        v-bind="props"
-                                        color="purple-darken-3"
-                                    >
-                                    {{ role }}
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="role == 'Vice President'"
-                                        v-bind="props"
-                                        color="cyan-darken-1"
-                                    >
-                                    {{ role }}
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="role == 'Treasurer'"
-                                        v-bind="props"
-                                        color="amber-lighten-1"
-                                    >
-                                    {{ role }}
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="role == 'Secretary'"
-                                        v-bind="props"
-                                        color="green-darken-3"
-                                    >
-                                    {{ role }}
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="role == 'Member'"
-                                        v-bind="props"
-                                        color="blue-grey-lighten-1"
-                                    >
-                                    {{ role }}
-                                    </v-btn>
+                                    <v-btn v-if="role == 'Select Role'" v-bind="props" color="primary">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'President'" v-bind="props" color="purple-darken-3">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'Vice President'" v-bind="props" color="cyan-darken-1">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'Treasurer'" v-bind="props" color="amber-lighten-1">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'Secretary'" v-bind="props" color="green-darken-3">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'Member'" v-bind="props" color="blue-grey-lighten-1">{{ role }}</v-btn>
                                 </template>
 
                                 <v-list>
-                                    <v-list-item @click="role = 'President'" :active="role==='President'">
-                                        President
-                                    </v-list-item>
-                                    <v-list-item @click="role = 'Vice President'" :active="role==='Vice President'">
-                                        Vice President
-                                    </v-list-item>
-                                    <v-list-item @click="role = 'Treasurer'" :active="role==='Treasurer'">
-                                        Treasurer
-                                    </v-list-item>
-                                    <v-list-item @click="role = 'Secretary'" :active="role==='Secretary'">
-                                        Secretary
-                                    </v-list-item>
-                                    <v-list-item @click="role = 'Member'" :active="role==='Member'">
-                                        Member
-                                    </v-list-item>
+                                    <v-list-item @click="role = 'President'" :active="role==='President'">President</v-list-item>
+                                    <v-list-item @click="role = 'Vice President'" :active="role==='Vice President'">Vice President</v-list-item>
+                                    <v-list-item @click="role = 'Treasurer'" :active="role==='Treasurer'">Treasurer</v-list-item>
+                                    <v-list-item @click="role = 'Secretary'" :active="role==='Secretary'">Secretary</v-list-item>
+                                    <v-list-item @click="role = 'Member'" :active="role==='Member'">Member</v-list-item>
                                 </v-list>
                             </v-menu>
-
                         </v-row>
 
                         <v-row v-if="error" class="mt-10">
-                            <v-alert type="error" variant="tonal" class="mr-6">
-                            {{ error }}
-                            </v-alert>
+                            <v-alert type="error" variant="tonal" class="mr-6">{{ error }}</v-alert>
                         </v-row>
 
                         <v-row class="justify-center">
-                            <v-btn
-                            type="submit"
-                            class="mt-7 bg-primary"
-                            width="150"
-                            :loading="loading"
-                            >
-                            Add Member
+                            <v-btn type="submit" class="mt-7 bg-primary" width="150" :loading="loading">
+                                Add Member
                             </v-btn>
                         </v-row>
                     </v-form>
@@ -429,6 +427,106 @@
                     </v-card>
                 </div>
 
+                <div v-if="selected === 'tasks'" class="mt-6">
+                    <v-card>
+                        <v-card-title class="d-flex align-center justify-space-between">
+                            Tasks
+                            <v-btn size="small" variant="tonal" prepend-icon="mdi-refresh" @click="loadTasks">Refresh</v-btn>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-alert v-if="tasksError" type="error" variant="tonal" class="mb-4">{{ tasksError }}</v-alert>
+                            <v-data-table
+                                :items="tasks"
+                                :loading="tasksLoading"
+                                loading-text="Loading tasks..."
+                                :headers="[
+                                    { title: 'Title', key: 'title' },
+                                    { title: 'Priority', key: 'priority' },
+                                    { title: 'Status', key: 'status' },
+                                    { title: 'Days Left', key: 'daysUntilDue' },
+                                ]"
+                                density="compact"
+                            >
+                                <template #item.priority="{ item }">
+                                    <v-chip :color="priorityColor[item.priority] ?? 'grey'" size="x-small" variant="tonal">
+                                        {{ item.priority }}
+                                    </v-chip>
+                                </template>
+                                <template #item.status="{ item }">
+                                    <v-chip :color="statusColor[item.status] ?? 'grey'" size="x-small" variant="tonal">
+                                        {{ item.status }}
+                                    </v-chip>
+                                </template>
+                                <template #item.daysUntilDue="{ item }">
+                                    <v-chip
+                                        :color="item.daysUntilDue === 'overdue' ? 'red' : Number(item.daysUntilDue) <= 3 ? 'orange' : 'green'"
+                                        size="x-small"
+                                        variant="tonal"
+                                    >
+                                        {{ item.daysUntilDue === 'overdue' ? 'Overdue' : `${item.daysUntilDue}d` }}
+                                    </v-chip>
+                                </template>
+                            </v-data-table>
+                        </v-card-text>
+                    </v-card>
+                </div>
+
+                <div v-if="selected === 'createTask'" class="mt-6">
+                    <v-card>
+                        <v-card-title>Create Task</v-card-title>
+                        <v-card-text>
+                            <v-alert v-if="taskFormSuccess" type="success" variant="tonal" class="mb-4" closable @click:close="taskFormSuccess = false">
+                                Task created successfully!
+                            </v-alert>
+                            <v-alert v-if="taskFormError" type="error" variant="tonal" class="mb-4">
+                                {{ taskFormError }}
+                            </v-alert>
+                            <v-form v-model="taskFormValid" @submit.prevent="submitTask">
+                                <v-text-field
+                                    v-model="taskForm.title"
+                                    label="Title"
+                                    :rules="[v => !!v || 'Title is required']"
+                                    required
+                                />
+                                <v-textarea
+                                    v-model="taskForm.description"
+                                    label="Description"
+                                    rows="3"
+                                />
+                                <v-row>
+                                    <v-col cols="6">
+                                        <v-select
+                                            v-model="taskForm.priority"
+                                            :items="taskPriorities"
+                                            label="Priority"
+                                            prepend-inner-icon="mdi-flag-outline"
+                                        />
+                                    </v-col>
+                                    <v-col cols="6">
+                                        <v-select
+                                            v-model="taskForm.status"
+                                            :items="taskStatuses"
+                                            label="Status"
+                                            prepend-inner-icon="mdi-list-status"
+                                        />
+                                    </v-col>
+                                </v-row>
+                                <v-text-field
+                                    v-model="taskForm.due_date"
+                                    label="Due Date"
+                                    type="date"
+                                    prepend-inner-icon="mdi-calendar"
+                                />
+                                <v-row class="mt-2">
+                                    <v-col>
+                                        <v-btn type="submit" color="primary" :loading="taskFormLoading">Create Task</v-btn>
+                                    </v-col>
+                                </v-row>
+                            </v-form>
+                        </v-card-text>
+                    </v-card>
+                </div>
+
                 <div v-if="selected === 'manageMember'" class="mt-6">
                     <v-card>
                         <v-card-title>Settings</v-card-title>
@@ -437,6 +535,7 @@
                         </v-card-text>
                     </v-card>
                 </div>
+
             </v-container>
         </v-main>
     </v-app>
