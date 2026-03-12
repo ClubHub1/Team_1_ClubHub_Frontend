@@ -1,44 +1,52 @@
-<script setup>
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { feathersClient } from '@/backendAPI'
+import useClubStore from '@/stores/clubStore'
 import EventCard from '@/components/dashboard/eventCard.vue'
 import EmptyState from '@/components/dashboard/emptyState.vue'
 
+const clubStore = useClubStore()
+const events = ref<any[]>([])
+const loading = ref(false)
+const error = ref('')
 
-const events = [
-  {
-    id: 1,
-    title: 'Welcome Night',
-    date: '2024-09-01',
-    time: '18:00',
-    location: 'Main Hall',
-  },
-  {
-    id: 2,
-    title: 'Workshop',
-    date: '2024-09-10',
-    time: '15:00',
-    location: 'Room 101',
-  },
-  {
-    id: 3,
-    title: 'Social',
-    date: '2024-09-15',
-    time: '19:00',
-    location: 'LME',
-  },
-]
+onMounted(async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await (feathersClient.service('Event') as any).find({
+      query: {
+        club: clubStore.id,
+        start_datetime: { $gte: new Date().toISOString() },
+        $sort: { start_datetime: 1 },
+        $limit: 5
+      }
+    })
+    events.value = res.data ?? []
+  } catch (e: any) {
+    error.value = 'Failed to load events.'
+    console.error('EVENT LIST ERROR:', e)
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
   <div class="eventList">
-    <EventCard
-      v-for="event in events"
-      :key="event.id"
-      :clubEvent="event"
-    />
-    <EmptyState
-      v-if="events.length === 0"
-      message="No upcoming events. Stay tuned for updates!"
-    />
+    <div v-if="loading">Loading events...</div>
+    <div v-else-if="error" class="text-error text-body-2">{{ error }}</div>
+    <div v-else>
+      <EventCard
+        v-for="event in events"
+        :key="event.event_id"
+        :clubEvent="event"
+      />
+      <EmptyState
+        v-if="events.length === 0"
+        message="No upcoming events. Stay tuned for updates!"
+      />
+    </div>
   </div>
 </template>
 
