@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { feathersClient } from './backendAPI'
 import Icon from './components/icon.vue'
 
 const router = useRouter()
@@ -8,10 +9,61 @@ const router = useRouter()
 const searchQuery = ref("")
 const selectedTags = ref<string[]>([])
 const selectedStatus = ref<string[]>([])
-const allTags = ref(["Sports", "Technology", "Arts", "Community", "Academic",
-  "Competitive", "Volunteering", "Gaming", "Coding", "Music",
-  "Strategy", "Leadership", "Cultural", "Health & Wellness", "Engineering",
-  "Business", "Science", "Pre-Med", "Law", "Environmental"])
+const allTags = [
+  { label: 'Academic', value: 'academic' },
+  { label: 'Activism', value: 'activism' },
+  { label: 'API', value: 'api' },
+  { label: 'Athletic', value: 'athletic' },
+  { label: 'Black / African', value: 'black_african' },
+  { label: 'Career Development', value: 'career_dev' },
+  { label: 'Christian', value: 'christian' },
+  { label: 'Civic', value: 'civic' },
+  { label: 'Competitive Sports', value: 'sports_comp' },
+  { label: 'Non-Competitive Sports', value: 'sports_noncomp' },
+  { label: 'Community Service', value: 'community_svc' },
+  { label: 'Cooking', value: 'cooking' },
+  { label: 'Crafts & Arts', value: 'crafts_arts' },
+  { label: 'Cultural / Language', value: 'cultural_lang' },
+  { label: 'Dance', value: 'dance' },
+  { label: 'Democratic Engagement', value: 'democratic_engagement' },
+  { label: 'Environment', value: 'environment' },
+  { label: 'Faith', value: 'faith' },
+  { label: 'Greek Life', value: 'greek_life' },
+  { label: 'Gaming', value: 'gaming' },
+  { label: 'Gender & Sexuality', value: 'gender_sexuality' },
+  { label: 'Health', value: 'health' },
+  { label: 'Honor Societies', value: 'honor_societies' },
+  { label: 'Indigenous', value: 'indigenous' },
+  { label: 'International', value: 'international' },
+  { label: 'Intramural Sports', value: 'sports_intramural' },
+  { label: 'Jewish', value: 'jewish' },
+  { label: 'Lake Tahoe', value: 'lake_tahoe' },
+  { label: 'Latinx', value: 'latinx' },
+  { label: 'Leadership', value: 'leadership' },
+  { label: 'Literary', value: 'literary' },
+  { label: 'Martial Arts', value: 'martial_arts' },
+  { label: 'Media', value: 'media' },
+  { label: 'Men of Color', value: 'men_of_color' },
+  { label: 'MENA', value: 'mena' },
+  { label: 'Multicultural', value: 'multicultural' },
+  { label: 'Music', value: 'music' },
+  { label: 'Muslim', value: 'muslim' },
+  { label: 'Neurodiversity', value: 'neurodiversity' },
+  { label: 'Outdoor Recreation', value: 'outdoor_rec' },
+  { label: 'Political', value: 'political' },
+  { label: 'Pre-Professional', value: 'pre_professional' },
+  { label: 'Religious', value: 'religious' },
+  { label: 'Research', value: 'research' },
+  { label: 'Social', value: 'social' },
+  { label: 'Social Justice', value: 'social_justice' },
+  { label: 'Special Interest', value: 'special_interest' },
+  { label: 'STEM', value: 'stem' },
+  { label: 'Student Government', value: 'student_gov' },
+  { label: 'Student Resources', value: 'student_resources' },
+  { label: 'Theater', value: 'theater' },
+  { label: 'Women of Color', value: 'women_of_color' },
+  { label: 'Women-Centered', value: 'women_centered' },
+]
 
 const clubs = ref<any[]>([])
 const loading = ref(false)
@@ -26,12 +78,15 @@ const headers = [
 onMounted(async () => {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:3030/Club?$limit=1000')
-    const data = await res.json()
-    clubs.value = Array.isArray(data) ? data : data.data ?? []
-  } catch (e) {
-    console.error('Failed to load clubs:', e)
-  } finally {
+    const res = await (feathersClient.service('Club') as any).find({
+      query: { $limit: 1000, $sort: {name: 1}}
+    })
+    clubs.value = res.data ?? []
+  }
+  catch(e){
+    console.error('Failed to load clubs: ', e)
+  }
+  finally {
     loading.value = false
   }
 })
@@ -43,7 +98,9 @@ const filteredClubs = computed(() => {
       club.description?.toLowerCase().includes(q)
     const matchStatus = selectedStatus.value.length === 0 ||
       selectedStatus.value.includes(club.activity_status)
-    return matchSearch && matchStatus
+    const matchTags = selectedTags.value.length === 0 ||
+      selectedTags.value.every(tag => club.tags?.includes(tag))
+    return matchSearch && matchStatus && matchTags
   })
 })
 
@@ -111,6 +168,8 @@ function clearFilters() {
               <v-autocomplete
                 v-model="selectedTags"
                 :items="allTags"
+                item-title="label"
+                item-value="value"
                 multiple
                 chips
                 closable-chips
@@ -139,7 +198,7 @@ function clearFilters() {
               :headers="headers"
               :items="filteredClubs"
               :loading="loading"
-              item-value="id"
+              item-value="club_id"
               class="elevation-2"
               :items-per-page="25">
 
