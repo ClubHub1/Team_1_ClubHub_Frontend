@@ -36,6 +36,7 @@ async function saveEvent() {
     loading.value = true
     error.value = ''
     success.value = false
+<<<<<<< HEAD
 
     try {
         const payload = {
@@ -44,6 +45,33 @@ async function saveEvent() {
         datetime: eventForm.datetime,
         location: eventForm.location,
         description: eventForm.description
+=======
+    
+    const created = new Date()
+
+    /*
+    {
+    event_id: Type.Number(),
+    club: Type.Number(),
+    name: Type.String(),
+    description: Type.String(),
+    start_datetime: Type.Optional(Type.String()),
+    end_datetime: Type.Optional(Type.String()),
+    location: Type.String(),
+    created_at: Type.String()
+    },
+    */
+
+    try {
+        const payload = {
+        club: clubStore.id,
+        name: eventForm.title,
+        start_datetime: eventForm.datetime,
+        end_datetime: eventForm.datetime,
+        location: eventForm.location,
+        description: eventForm.description,
+        created_at: created
+>>>>>>> origin/develop
         }
         await feathersClient.service('Event').create(payload as any)
         success.value = true

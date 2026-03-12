@@ -4,7 +4,9 @@
     import useClubStore from './stores/clubStore'
     import { feathersClient } from './backendAPI'
     import useMemberStore from './stores/memberStore'
+    import clubEventsPage from './clubEventsPage.vue'
     import useUserStore from './stores/user'
+    import ClubEventsPage from './clubEventsPage.vue'
 
     const auth = useAuthStore()
     const clubStore = useClubStore()
@@ -208,12 +210,14 @@
             }
         }
 
+        console.log(email.value)
         const res = await(feathersClient.service("User").find({
             query:{
                 $select: ['id', 'email'],
                 email: email.value,
             }
         }))
+        console.log(res)
         if(res.data.length == 1){
             console.log(res.data[0])
         } else {
@@ -223,7 +227,6 @@
     }
 
     function cellPropHandler({item, column}){
-        console.log(item, column)
         if (item.memberRole == 'President' && column.title == 'Role') {
             return { class: 'bg-error rounded px-2 py-1' }; // Using a built-in Vuetify background color class
         }
@@ -250,22 +253,7 @@
         <v-main>
             <v-container class="pa-6">
                 <div v-if="selected === 'createEvent'">
-                    <v-card>
-                        <v-card-title>Create Event</v-card-title>
-                        <v-card-text>
-                            <v-form>
-                                <v-text-field v-model="eventForm.title" label="Title" />
-                                <v-text-field v-model="eventForm.date" label="Date" type="date" />
-                                <v-text-field v-model="eventForm.location" label="Location" />
-                                <v-textarea v-model="eventForm.description" label="Description" rows="4" />
-                                <v-row class="mt-4">
-                                    <v-col>
-                                        <v-btn color="primary" @click="submitEvent">Create</v-btn>
-                                    </v-col>
-                                </v-row>
-                            </v-form>
-                        </v-card-text>
-                    </v-card>
+                        <club-events-page></club-events-page>
                 </div>
 
                 <div v-if="selected === 'createAnnouncement'" class="mt-6">
