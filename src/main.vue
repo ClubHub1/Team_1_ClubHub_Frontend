@@ -22,6 +22,10 @@ Main Home Site Structure, Mounted on initialization
     function iconClicked() {
         router.push('/')
     }
+
+    async function logoutUser() {
+        await authStore.logout
+    }
     
     const links = {
         homeLink: {
@@ -36,6 +40,7 @@ Main Home Site Structure, Mounted on initialization
     
     router.push('/')
     
+
 </script>
 
 <template>
