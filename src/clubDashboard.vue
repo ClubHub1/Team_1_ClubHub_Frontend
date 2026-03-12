@@ -6,8 +6,9 @@
     import useMemberStore from './stores/memberStore'
     import useUserStore from './stores/user'
     import { getTasks, type Task } from '@/services/tasks'
-    import ClubEventsPage from './clubEventsPage.vue'
+    import clubEventsPage from './clubEventsPage.vue'
     import clubNotificationsPage from './clubNotificationsPage.vue'
+    import clubAttendancePage from './attendancePage.vue'
 
     const auth = useAuthStore()
     const clubStore = useClubStore()
@@ -122,6 +123,7 @@
         { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['Advisor', 'President', 'Treasurer']},
         { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
         { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'attendance', label: 'Attendance', icon: 'mdi-account-check', roles:['Advisor','President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
         { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['Advisor', 'President']}
     ]
 
@@ -168,7 +170,7 @@
         taskFormSuccess.value = false
         try {
             const now = new Date().toISOString()
-            await feathersClient.service('Task').create({
+            await (feathersClient.service('Task') as any).create({
                 club: String(clubStore.id),
                 title: taskForm.title,
                 due_date: taskForm.due_date,
@@ -513,6 +515,10 @@
                             </v-form>
                         </v-card-text>
                     </v-card>
+                </div>
+
+                <div v-if="selected === 'attendance'">
+                    <club-attendance-page></club-attendance-page>
                 </div>
 
                 <div v-if="selected === 'manageMember'" class="mt-6">
