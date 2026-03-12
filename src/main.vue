@@ -22,11 +22,6 @@ Main Home Site Structure, Mounted on initialization
     function iconClicked() {
         router.push('/')
     }
-
-    async function logoutUser() {
-        await(authStore.logout())
-        router.push('/')
-    }
     
     const links = {
         homeLink: {
@@ -50,7 +45,7 @@ Main Home Site Structure, Mounted on initialization
             <template v-slot:prepend>
                 <v-icon @click="iconClicked" icon = "$chLogo" size=65 to="/"/>
                 <v-img 
-                class= "mt-3 d-none d-sm-inline" 
+                class= "mt-3" 
                 src=src/assets/clubhubText.png
                 cover 
                 :width="200" 

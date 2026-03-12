@@ -22,8 +22,8 @@ MAIN PAGE STRUCTURE BEGINS HERE
               <v-card-title style="background-color: rgba(0, 0, 0, 0.5); color: white;" class="d-flex mt-15 justify-center mb-5">
                 <span class="font-weight-bold text-h4">
                   <div class="text-center mt-10">
-                    <h1>Welcome to ClubHub</h1>
-                    <h4>Your club management solution</h4>
+                    <h1>By students, for students.</h1>
+                    <h4>Meet the team behind ClubHub</h4>
                   </div>
                 </span>
               </v-card-title>
@@ -42,7 +42,7 @@ MAIN PAGE STRUCTURE BEGINS HERE
             >
               <v-card-title>
                   <div class="text-center mt-5 font-italic">
-                    <h2>Our CS 426 Senior Project in Computer Science, Spring 2025, at UNR's CSE Department.</h2>
+                    <h2>CS 426 - Team 1 - Spring 2026</h2>
                   </div>
               </v-card-title>
             </v-card>
@@ -58,13 +58,12 @@ MAIN PAGE STRUCTURE BEGINS HERE
             <v-card class=" mt-15 mb-10 bg-white" flat color="transparent" height="300" width="1200">
               <v-card-title class=" d-flex justify-center rounded-xl bg-primary">
                 <span class="font-weight-bold text-h4">
-                  <h1>About our Project</h1>
+                  <h1>About ClubHub</h1>
                 </span>
               </v-card-title>
               <v-card-text class="bg-surface mt-10 text-center">
                 <P>
-                  TOOK THE ABSTRACT FROM OUR LAST PA. WILL DEFINETLY NEED WORK
-      Our webpage ClubHub will be a tool that can help and assist club officers on 
+        Our webpage ClubHub will be a tool that can help and assist club officers on 
       campus with organizational duties and management by addressing the lack of 
       an effective, centralized webpage for officers and leaders of on campus clubs 
       and organizations, aiming to provide success through efficient leadership. 
