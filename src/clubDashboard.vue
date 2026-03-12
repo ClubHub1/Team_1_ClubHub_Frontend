@@ -210,7 +210,7 @@
 
         const res = await(feathersClient.service("User").find({
             query:{
-                $select: ['id, email'],
+                $select: ['id', 'email'],
                 email: email.value,
             }
         }))
