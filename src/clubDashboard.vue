@@ -7,6 +7,7 @@
     import useUserStore from './stores/user'
     import { getTasks, type Task } from '@/services/tasks'
     import ClubEventsPage from './clubEventsPage.vue'
+    import clubNotificationsPage from './clubNotificationsPage.vue'
 
     const auth = useAuthStore()
     const clubStore = useClubStore()
@@ -311,20 +312,7 @@
                 </div>
 
                 <div v-if="selected === 'createAnnouncement'" class="mt-6">
-                    <v-card>
-                        <v-card-title>Create Announcement</v-card-title>
-                        <v-card-text>
-                            <v-form>
-                                <v-text-field v-model="announcementForm.title" label="Title" />
-                                <v-textarea v-model="announcementForm.message" label="Message" rows="4" />
-                                <v-row class="mt-4">
-                                    <v-col>
-                                        <v-btn color="primary" @click="submitAnnouncement">Publish</v-btn>
-                                    </v-col>
-                                </v-row>
-                            </v-form>
-                        </v-card-text>
-                    </v-card>
+                    <club-notifications-page></club-notifications-page>
                 </div>
 
                 <div v-if="selected === 'members'" class="mt-6">
