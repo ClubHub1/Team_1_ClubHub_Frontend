@@ -5,7 +5,7 @@
     import { feathersClient } from './backendAPI'
     import useMemberStore from './stores/memberStore'
     import useUserStore from './stores/user'
-    import { getTasks, type Task } from '@/services/tasks'
+    import { type Task } from '@/services/tasks'
     import ClubEventsPage from './clubEventsPage.vue'
     import financesPage from './financesPage.vue'
 
@@ -115,14 +115,15 @@
     onMounted(setPermissions)
 
     const sections = [
-        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['advisor','president', 'vice_pres', 'treasurer', 'secretary', 'member']},
-        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
-        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
-        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
-        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['advisor', 'president', 'treasurer']},
-        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
-        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
-        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['advisor', 'president']}
+        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['Advisor','President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
+        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['Advisor', 'President', 'Treasurer']},
+        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
+        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'editTask', label: 'Edit Tasks', icon: 'mdi-clipboard-edit-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
+        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['Advisor', 'President']}
     ]
 
     const activeSections = computed(() => {
@@ -159,7 +160,7 @@
     const taskFormSuccess = ref(false)
 
     const taskPriorities = ['Low', 'Medium', 'High']
-    const taskStatuses = ['Not Started', 'In Progress', 'Completed']
+    const taskStatuses = ['Not Started', 'In Progress', 'Complete']
 
     async function submitTask() {
         if (!taskFormValid.value) return
@@ -269,14 +270,27 @@
         Low: 'green', Medium: 'blue', High: 'orange'
     }
     const statusColor: Record<string, string> = {
-        'Not Started': 'grey', 'In Progress': 'blue', 'Completed': 'green'
+        'Not Started': 'grey', 'In Progress': 'blue', 'Complete': 'green'
     }
 
     async function loadTasks() {
         tasksLoading.value = true
         tasksError.value = null
         try {
-            tasks.value = await getTasks()
+            const res = await feathersClient.service('Task').find({
+                query: {
+                    club: String(clubStore.id),
+                }
+            })
+            const now = new Date()
+            tasks.value = res.data.map((task: any) => {
+                const due = new Date(task.due_date)
+                const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                return {
+                    ...task,
+                    daysUntilDue: diffDays < 0 ? 'overdue' : diffDays
+                }
+            })
         } catch (err) {
             tasksError.value = 'Failed to load tasks.'
             console.error(err)
@@ -288,6 +302,68 @@
     function handleNavClick(sectionId: string) {
         selected.value = sectionId
         if (sectionId === 'tasks') loadTasks()
+        if (sectionId === 'editTask') loadTasks()
+    }
+
+    const editTaskForm = reactive({ id: null as number | null, title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
+    const editTaskValid = ref(false)
+    const editTaskLoading = ref(false)
+    const editTaskError = ref('')
+    const editTaskSuccess = ref('')
+    const selectedTask = ref<Task | null>(null)
+
+    function selectTaskForEdit(task: Task) {
+        selectedTask.value = task
+        Object.assign(editTaskForm, {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            status: task.status,
+            due_date: task.due_date,
+        })
+        editTaskError.value = ''
+        editTaskSuccess.value = ''
+    }
+
+    async function saveTaskEdit() {
+        if (!editTaskValid.value || !editTaskForm.id) return
+        editTaskLoading.value = true
+        editTaskError.value = ''
+        editTaskSuccess.value = ''
+        try {
+            const now = new Date().toISOString()
+            await feathersClient.service('Task').patch(editTaskForm.id, {
+                title: editTaskForm.title,
+                description: editTaskForm.description,
+                priority: editTaskForm.priority,
+                status: editTaskForm.status,
+                due_date: editTaskForm.due_date,
+                updated_at: now,
+            })
+            editTaskSuccess.value = 'Task updated successfully!'
+            await loadTasks()
+        } catch (err) {
+            editTaskError.value = 'Failed to update task. Please try again.'
+            console.error(err)
+        } finally {
+            editTaskLoading.value = false
+        }
+    }
+
+    async function deleteTask(id: number) {
+        if (!confirm('Are you sure you want to delete this task?')) return
+        try {
+            await feathersClient.service('Task').remove(id)
+            if (selectedTask.value?.id === id) {
+                selectedTask.value = null
+                Object.assign(editTaskForm, { id: null, title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
+            }
+            await loadTasks()
+        } catch (err) {
+            editTaskError.value = 'Failed to delete task. Please try again.'
+            console.error(err)
+        }
     }
 
 </script>
@@ -519,6 +595,103 @@
                             </v-form>
                         </v-card-text>
                     </v-card>
+                </div>
+
+                <div v-if="selected === 'editTask'" class="mt-6">
+                    <v-row>
+                        <!-- Task list for selection -->
+                        <v-col cols="12" md="5">
+                            <v-card height="100%">
+                                <v-card-title>Select a Task</v-card-title>
+                                <v-card-text>
+                                    <v-alert v-if="tasksError" type="error" variant="tonal" class="mb-3">{{ tasksError }}</v-alert>
+                                    <v-list lines="two" select-strategy="single-leaf">
+                                        <v-list-item
+                                            v-for="task in tasks"
+                                            :key="task.id"
+                                            :title="task.title"
+                                            :subtitle="task.status"
+                                            :active="selectedTask?.id === task.id"
+                                            active-color="primary"
+                                            @click="selectTaskForEdit(task)"
+                                        >
+                                            <template #append>
+                                                <v-chip :color="priorityColor[task.priority] ?? 'grey'" size="x-small" variant="tonal" class="mr-2">
+                                                    {{ task.priority }}
+                                                </v-chip>
+                                                <v-btn icon="mdi-delete" size="x-small" color="error" variant="text" @click.stop="deleteTask(task.id)" />
+                                            </template>
+                                        </v-list-item>
+                                        <v-list-item v-if="tasks.length === 0 && !tasksLoading">
+                                            <v-list-item-title class="text-grey">No tasks found for this club.</v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+
+                        <!-- Edit form -->
+                        <v-col cols="12" md="7">
+                            <v-card height="100%">
+                                <v-card-title>Edit Task</v-card-title>
+                                <v-card-text>
+                                    <div v-if="!selectedTask" class="text-grey mt-4">
+                                        Select a task on the left to edit it.
+                                    </div>
+                                    <div v-else>
+                                        <v-alert v-if="editTaskSuccess" type="success" variant="tonal" class="mb-4" closable @click:close="editTaskSuccess = ''">
+                                            {{ editTaskSuccess }}
+                                        </v-alert>
+                                        <v-alert v-if="editTaskError" type="error" variant="tonal" class="mb-4">
+                                            {{ editTaskError }}
+                                        </v-alert>
+                                        <v-form v-model="editTaskValid" @submit.prevent="saveTaskEdit">
+                                            <v-text-field
+                                                v-model="editTaskForm.title"
+                                                label="Title"
+                                                :rules="[v => !!v || 'Title is required']"
+                                                required
+                                            />
+                                            <v-textarea
+                                                v-model="editTaskForm.description"
+                                                label="Description"
+                                                rows="3"
+                                            />
+                                            <v-row>
+                                                <v-col cols="6">
+                                                    <v-select
+                                                        v-model="editTaskForm.priority"
+                                                        :items="taskPriorities"
+                                                        label="Priority"
+                                                        prepend-inner-icon="mdi-flag-outline"
+                                                    />
+                                                </v-col>
+                                                <v-col cols="6">
+                                                    <v-select
+                                                        v-model="editTaskForm.status"
+                                                        :items="taskStatuses"
+                                                        label="Status"
+                                                        prepend-inner-icon="mdi-list-status"
+                                                    />
+                                                </v-col>
+                                            </v-row>
+                                            <v-text-field
+                                                v-model="editTaskForm.due_date"
+                                                label="Due Date"
+                                                type="date"
+                                                prepend-inner-icon="mdi-calendar"
+                                            />
+                                            <v-row class="mt-2">
+                                                <v-col>
+                                                    <v-btn type="submit" color="primary" :loading="editTaskLoading">Save Changes</v-btn>
+                                                </v-col>
+                                            </v-row>
+                                        </v-form>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+                    </v-row>
                 </div>
 
                 <div v-if="selected === 'manageMember'" class="mt-6">
