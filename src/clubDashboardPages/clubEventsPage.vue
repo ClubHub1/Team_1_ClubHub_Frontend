@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { feathersClient } from './backendAPI'
+import { feathersClient } from '../backendAPI'
 import useClubStore from '@/stores/clubStore'
 
 const clubStore = useClubStore()

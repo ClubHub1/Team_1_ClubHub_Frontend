@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { feathersClient } from './backendAPI'
-import useClubStore from './stores/clubStore'
-import useUserStore from './stores/user'
+import { feathersClient } from '../backendAPI'
+import useClubStore from '../stores/clubStore'
+import useUserStore from '../stores/user'
 
 const clubStore = useClubStore()
 const userStore = useUserStore()

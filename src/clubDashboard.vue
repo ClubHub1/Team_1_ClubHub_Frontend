@@ -1,288 +1,64 @@
 <script setup lang="ts">
-    import { ref, reactive, computed, VueElement, onMounted } from 'vue'
-    import { useAuthStore } from './stores/auth'
-    import useClubStore from './stores/clubStore'
-    import { feathersClient } from './backendAPI'
-    import useMemberStore from './stores/memberStore'
-    import useUserStore from './stores/user'
-    import { getTasks, type Task } from '@/services/tasks'
-    import clubEventsPage from './clubEventsPage.vue'
-    import clubNotificationsPage from './clubNotificationsPage.vue'
-    import clubAttendancePage from './attendancePage.vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from './stores/auth'
+import useClubStore from './stores/clubStore'
+import { feathersClient } from './backendAPI'
+import useMemberStore from './stores/memberStore'
+import useUserStore from './stores/user'
 
-    const auth = useAuthStore()
-    const clubStore = useClubStore()
-    const memberStore = useMemberStore()
-    const userStore = useUserStore()
+import ClubEventsPage from './clubDashboardPages/clubEventsPage.vue'
+import ClubNotificationsPage from './clubDashboardPages/clubNotificationsPage.vue'
+import ClubAttendancePage from './clubDashboardPages/attendancePage.vue'
+import ClubMembersPage from './clubDashboardPages/clubMembersPage.vue'
+import ClubTasksPage from './clubDashboardPages/clubTasksPage.vue'
+import ClubFinancesPage from './clubDashboardPages/clubFinancesPage.vue'
+import ClubSettingsPage from './clubDashboardPages/clubSettingsPage.vue'
 
-    const USERROLE = ''
-    const role = ref('Select Role')
-    const email = ref('')
-    const error = ref('')
+const auth = useAuthStore()
+const clubStore = useClubStore()
+const memberStore = useMemberStore()
+const userStore = useUserStore()
 
-    const loading = ref(false)
-    const valid = ref(false)
-
-    const memberList = []
-
-    async function setPermissions(){
-        const res = await(feathersClient.service("ClubMembership").find({
-            query:{
-                $select:['role', 'id'],
-                userid: userStore.id,
-                clubid: clubStore.id
-            }
-        })).catch(err =>{
-            console.log('SERVER THREW ERROR RETRIEVING MEMBERSHIP ENTRY: ', err)
-        })
-
-        if(res){
-            const memberInfo = res.data
-            console.log('CURRENT MEMBERINFO: ', memberInfo[0].role, ' ', memberInfo[0].id)
-
-            memberStore.setRole(memberInfo[0].role)
-            memberStore.setId(memberInfo[0].id)
+// ── Set current user's role and membership ID ─────────────────────────────────
+async function setPermissions() {
+    const res = await (feathersClient.service('ClubMembership') as any).find({
+        query: {
+            $select: ['role', 'id'],
+            userid: userStore.id,
+            clubid: clubStore.id
         }
-        
-        const memberRes = await(feathersClient.service("ClubMembership").find({
-            query: {
-                clubid: clubStore.id,
-                $sort: {
-                    userid: -1
-                }
-            }
-        })).catch(err =>{
-            error.value = err
-            console.log(error)
-        })
+    }).catch((err: any) => {
+        console.error('SERVER THREW ERROR RETRIEVING MEMBERSHIP ENTRY:', err)
+    })
 
-        const userIds = []
-
-        if(memberRes){
-            console.log(memberRes)
-            const memberArray = memberRes.data
-            for(const member of memberArray){
-                userIds.push(member.userid)
-            }
-
-            console.log('USER IDS: ', userIds)
-
-            const usersRes = await(feathersClient.service("User").find({
-                query:{
-                    $sort: {
-                        id: -1
-                    },
-                    id: {
-                        $in: userIds
-                    }
-                }
-            })).catch(err=>{
-                error.value = err
-                console.log(error)
-            })
-
-            if(usersRes){
-                console.log(usersRes)
-                const userData = usersRes.data
-
-                console.log(userData)
-
-                for(let i = 0; i < userData.length; i++){
-                    memberList.push({
-                        memberFName: userData[i].first_name,
-                        memberLName: userData[i].last_name,
-                        memberEmail: userData[i].email,
-                        membershipID: memberArray[i].id,
-                        memberRole: memberArray[i].role
-                    });
-                }
-
-                console.log(memberList)
-            }
-        }
+    if (res?.data?.length) {
+        memberStore.setRole(res.data[0].role)
+        memberStore.setId(res.data[0].id)
     }
+}
 
-    const emailRules = [
-        (value: string) => {
-        if (value) return true
-        return 'E-mail is required.'
-        },
-        (value: string) => {
-        if (/^[a-z0-9._%+-]+@unr\.edu$/i.test(value)) return true
-        return 'E-mail must be valid and school issued ("@unr").'
-        },
-    ]
+onMounted(setPermissions)
 
-    onMounted(setPermissions)
+const sections = [
+    { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary', 'Member'] },
+    { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary'] },
+    { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary'] },
+    { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary'] },
+    { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles: ['Advisor', 'President', 'Treasurer'] },
+    { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary'] },
+    { id: 'attendance', label: 'Attendance', icon: 'mdi-account-check', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary', 'Member'] },
+    { id: 'settings',  label: 'Settings', icon: 'mdi-cog', roles: ['Advisor', 'President'] },
+]
 
-    const sections = [
-        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['Advisor','President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
-        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['Advisor', 'President', 'Treasurer']},
-        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'attendance', label: 'Attendance', icon: 'mdi-account-check', roles:['Advisor','President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
-        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['Advisor', 'President']}
-    ]
+const activeSections = computed(() =>
+    sections.filter(item => item.roles.includes(memberStore.role))
+)
 
-    const activeSections = computed(() => {
-        console.log('AUTHENTICATED USER ROLE: ', memberStore.role)
-        console.log(sections)
-        return sections.filter(item => item.roles.includes(memberStore.role))
-    });
+const selected = ref('dashboard')
 
-    console.log(activeSections.value)
-
-    const selected = ref('dashboard')
-
-    const announcementForm = reactive({ title: '', message: '' })
-
-    const members = ref([])
-
-    const transactions = ref([
-        { id: 1, date: '2026-02-01', description: 'Membership fees', amount: 200 },
-        { id: 2, date: '2026-02-15', description: 'Poster printing', amount: -40 }
-    ])
-
-    const balance = computed(() => transactions.value.reduce((s, t) => s + t.amount, 0))
-
-    function submitAnnouncement() {
-        // TODO: wire to backend API
-        console.log('Create Announcement', { ...announcementForm })
-        Object.assign(announcementForm, { title: '', message: '' })
-    }
-
-    const taskForm = reactive({ title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
-    const taskFormValid = ref(false)
-    const taskFormLoading = ref(false)
-    const taskFormError = ref('')
-    const taskFormSuccess = ref(false)
-
-    const taskPriorities = ['Low', 'Medium', 'High']
-    const taskStatuses = ['Not Started', 'In Progress', 'Completed']
-
-    async function submitTask() {
-        if (!taskFormValid.value) return
-        taskFormLoading.value = true
-        taskFormError.value = ''
-        taskFormSuccess.value = false
-        try {
-            const now = new Date().toISOString()
-            await (feathersClient.service('Task') as any).create({
-                club: String(clubStore.id),
-                title: taskForm.title,
-                due_date: taskForm.due_date,
-                description: taskForm.description,
-                created_at: now,
-                updated_at: now,
-                priority: taskForm.priority,
-                status: taskForm.status,
-            })
-            taskFormSuccess.value = true
-            Object.assign(taskForm, { title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
-        } catch (err) {
-            taskFormError.value = 'Failed to create task. Please try again.'
-            console.error(err)
-        } finally {
-            taskFormLoading.value = false
-        }
-    }
-
-    function addTransaction() {
-        const id = transactions.value.length + 1
-        transactions.value.push({ id, date: new Date().toISOString().slice(0, 10), description: 'New tx', amount: 0 })
-    }
-
-    function manageMember(id: number) {
-        console.log('MANAGING MEMBER WITH MEMBERSHIP ID:', id)
-    }
-
-    async function addMember(){
-        if (!valid.value) return
-
-        error.value = ''
-        loading.value = true
-
-        if(role.value != 'Member'){
-            const res = await(feathersClient.service('ClubMembership')).find({
-                query: {
-                    clubid: clubStore.id,
-                    role: role.value
-                }
-            })
-            console.log('MEMBERADD RES: ', res)
-            if(res.data.length >= 1){
-                error.value = 'Role is already taken in this organization!'
-                loading.value = false;
-                return
-            } else {
-                console.log("ROLE NOT TAKEN")
-            }
-        }
-
-        for(const member of memberList){
-            if(member.memberEmail == email.value){
-                error.value = 'The user with this email is already a member!'
-                loading.value = false;
-                return
-            } else {
-                console.log("USER NOT A MEMBER")
-            }
-        }
-
-        console.log(email.value)
-        const res = await(feathersClient.service("User").find({
-            query:{
-                $select: ['id', 'email'],
-                email: email.value,
-            }
-        }))
-        console.log(res)
-        if(res.data.length == 1){
-            console.log(res.data[0])
-        } else {
-            console.log("User does not exist in the system- check their email")
-        }
-    }
-
-    function cellPropHandler({item, column}){
-        if (item.memberRole == 'President' && column.title == 'Role') {
-            return { class: 'bg-error rounded px-2 py-1' };
-        }
-        return null;
-    }
-
-    const tasks = ref<Task[]>([])
-    const tasksLoading = ref(false)
-    const tasksError = ref<string | null>(null)
-
-    const priorityColor: Record<string, string> = {
-        Low: 'green', Medium: 'blue', High: 'orange'
-    }
-    const statusColor: Record<string, string> = {
-        'Not Started': 'grey', 'In Progress': 'blue', 'Completed': 'green'
-    }
-
-    async function loadTasks() {
-        tasksLoading.value = true
-        tasksError.value = null
-        try {
-            tasks.value = await getTasks()
-        } catch (err) {
-            tasksError.value = 'Failed to load tasks.'
-            console.error(err)
-        } finally {
-            tasksLoading.value = false
-        }
-    }
-
-    function handleNavClick(sectionId: string) {
-        selected.value = sectionId
-        if (sectionId === 'tasks') loadTasks()
-    }
-
+function handleNavClick(sectionId: string) {
+    selected.value = sectionId
+}
 </script>
 
 <template>
@@ -293,9 +69,9 @@
                     v-for="s in activeSections"
                     :key="s.id"
                     :value="s.id"
-                    @click="handleNavClick(s.id)"
                     :active="selected === s.id"
                     :prepend-icon="s.icon"
+                    @click="handleNavClick(s.id)"
                 >
                     <v-list-item-title>{{ s.label }}</v-list-item-title>
                 </v-list-item>
@@ -303,231 +79,40 @@
         </v-navigation-drawer>
 
         <v-app-bar app color="primary">
-            <v-toolbar-title><span class="font-weight-bold">{{ clubStore.name }}</span> — Manage your organization</v-toolbar-title>
+            <v-toolbar-title>
+                <span class="font-weight-bold">{{ clubStore.name }}</span> — Manage your organization
+            </v-toolbar-title>
         </v-app-bar>
 
         <v-main>
             <v-container class="pa-6">
 
                 <div v-if="selected === 'createEvent'">
-                    <club-events-page></club-events-page>
+                    <ClubEventsPage />
                 </div>
 
-                <div v-if="selected === 'createAnnouncement'" class="mt-6">
-                    <club-notifications-page></club-notifications-page>
+                <div v-if="selected === 'createAnnouncement'">
+                    <ClubNotificationsPage />
                 </div>
 
-                <div v-if="selected === 'members'" class="mt-6">
-                    <v-card>
-                        <v-card-title>Members</v-card-title>
-                        <v-card-text>
-                            <v-data-table :cell-props="cellPropHandler" :items="memberList" :headers="[{title:'First Name',key:'memberFName'},{title:'Last Name',key:'memberLName'},{title:'Role',key:'memberRole',},{title:'Email',key:'memberEmail'},{title:'Actions',key:'actions'}]">
-                                <template #item.actions="{ item }">
-                                    <v-btn class="ml-3" icon="mdi-cog" height="30" width="30" @click="manageMember(item.membershipID)"></v-btn>
-                                </template>
-                            </v-data-table>
-                        </v-card-text>
-                    </v-card>
-                    <v-row justify="center" class="mt-15">
-                        <v-btn color="primary" class="justify-center" @click="selected = 'memberAdd'">
-                            Add Members
-                        </v-btn>
-                    </v-row>
+                <div v-if="selected === 'members'">
+                    <ClubMembersPage />
                 </div>
 
-                <div v-if="selected === 'memberAdd'" class="mt-6">
-                    <v-form v-model="valid" class="mt-7" @submit.prevent="addMember">
-              
-                        <v-row>
-                            <v-text-field
-                            v-model="email"
-                            :rules="emailRules"
-                            label="E-mail"
-                            required
-                            class="mr-6 mb-5"
-                            />
-                        </v-row>
-
-                        <v-row>
-                            <v-menu>
-                                <template v-slot:activator="{props}"> 
-                                    <v-btn v-if="role == 'Select Role'" v-bind="props" color="primary">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'President'" v-bind="props" color="purple-darken-3">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Vice President'" v-bind="props" color="cyan-darken-1">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Treasurer'" v-bind="props" color="amber-lighten-1">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Secretary'" v-bind="props" color="green-darken-3">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Member'" v-bind="props" color="blue-grey-lighten-1">{{ role }}</v-btn>
-                                </template>
-
-                                <v-list>
-                                    <v-list-item @click="role = 'President'" :active="role==='President'">President</v-list-item>
-                                    <v-list-item @click="role = 'Vice President'" :active="role==='Vice President'">Vice President</v-list-item>
-                                    <v-list-item @click="role = 'Treasurer'" :active="role==='Treasurer'">Treasurer</v-list-item>
-                                    <v-list-item @click="role = 'Secretary'" :active="role==='Secretary'">Secretary</v-list-item>
-                                    <v-list-item @click="role = 'Member'" :active="role==='Member'">Member</v-list-item>
-                                </v-list>
-                            </v-menu>
-                        </v-row>
-
-                        <v-row v-if="error" class="mt-10">
-                            <v-alert type="error" variant="tonal" class="mr-6">{{ error }}</v-alert>
-                        </v-row>
-
-                        <v-row class="justify-center">
-                            <v-btn type="submit" class="mt-7 bg-primary" width="150" :loading="loading">
-                                Add Member
-                            </v-btn>
-                        </v-row>
-                    </v-form>
+                <div v-if="selected === 'finances'">
+                    <ClubFinancesPage />
                 </div>
 
-                <div v-if="selected === 'finances'" class="mt-6">
-                    <v-row>
-                        <v-col cols="8">
-                            <v-card>
-                                <v-card-title>Transactions</v-card-title>
-                                <v-card-text>
-                                    <v-data-table :items="transactions" :headers="[{title:'Date',key:'date'},{title:'Description',key:'description'},{title:'Amount',key:'amount'}]" />
-                                    <v-row class="mt-4">
-                                        <v-col>
-                                            <v-btn @click="addTransaction">Add Transaction</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-card-text>
-                            </v-card>
-                        </v-col>
-
-                        <v-col cols="4">
-                            <v-card>
-                                <v-card-title>Balance</v-card-title>
-                                <v-card-text>
-                                    <div class="text-h5">{{ balance }}</div>
-                                </v-card-text>
-                            </v-card>
-                        </v-col>
-                    </v-row>
-                </div>
-
-                <div v-if="selected === 'settings'" class="mt-6">
-                    <v-card>
-                        <v-card-title>Settings</v-card-title>
-                        <v-card-text>
-                            <div>Manage club settings, roles, and integration options here.</div>
-                        </v-card-text>
-                    </v-card>
-                </div>
-
-                <div v-if="selected === 'tasks'" class="mt-6">
-                    <v-card>
-                        <v-card-title class="d-flex align-center justify-space-between">
-                            Tasks
-                            <v-btn size="small" variant="tonal" prepend-icon="mdi-refresh" @click="loadTasks">Refresh</v-btn>
-                        </v-card-title>
-                        <v-card-text>
-                            <v-alert v-if="tasksError" type="error" variant="tonal" class="mb-4">{{ tasksError }}</v-alert>
-                            <v-data-table
-                                :items="tasks"
-                                :loading="tasksLoading"
-                                loading-text="Loading tasks..."
-                                :headers="[
-                                    { title: 'Title', key: 'title' },
-                                    { title: 'Priority', key: 'priority' },
-                                    { title: 'Status', key: 'status' },
-                                    { title: 'Days Left', key: 'daysUntilDue' },
-                                ]"
-                                density="compact"
-                            >
-                                <template #item.priority="{ item }">
-                                    <v-chip :color="priorityColor[item.priority] ?? 'grey'" size="x-small" variant="tonal">
-                                        {{ item.priority }}
-                                    </v-chip>
-                                </template>
-                                <template #item.status="{ item }">
-                                    <v-chip :color="statusColor[item.status] ?? 'grey'" size="x-small" variant="tonal">
-                                        {{ item.status }}
-                                    </v-chip>
-                                </template>
-                                <template #item.daysUntilDue="{ item }">
-                                    <v-chip
-                                        :color="item.daysUntilDue === 'overdue' ? 'red' : Number(item.daysUntilDue) <= 3 ? 'orange' : 'green'"
-                                        size="x-small"
-                                        variant="tonal"
-                                    >
-                                        {{ item.daysUntilDue === 'overdue' ? 'Overdue' : `${item.daysUntilDue}d` }}
-                                    </v-chip>
-                                </template>
-                            </v-data-table>
-                        </v-card-text>
-                    </v-card>
-                </div>
-
-                <div v-if="selected === 'createTask'" class="mt-6">
-                    <v-card>
-                        <v-card-title>Create Task</v-card-title>
-                        <v-card-text>
-                            <v-alert v-if="taskFormSuccess" type="success" variant="tonal" class="mb-4" closable @click:close="taskFormSuccess = false">
-                                Task created successfully!
-                            </v-alert>
-                            <v-alert v-if="taskFormError" type="error" variant="tonal" class="mb-4">
-                                {{ taskFormError }}
-                            </v-alert>
-                            <v-form v-model="taskFormValid" @submit.prevent="submitTask">
-                                <v-text-field
-                                    v-model="taskForm.title"
-                                    label="Title"
-                                    :rules="[v => !!v || 'Title is required']"
-                                    required
-                                />
-                                <v-textarea
-                                    v-model="taskForm.description"
-                                    label="Description"
-                                    rows="3"
-                                />
-                                <v-row>
-                                    <v-col cols="6">
-                                        <v-select
-                                            v-model="taskForm.priority"
-                                            :items="taskPriorities"
-                                            label="Priority"
-                                            prepend-inner-icon="mdi-flag-outline"
-                                        />
-                                    </v-col>
-                                    <v-col cols="6">
-                                        <v-select
-                                            v-model="taskForm.status"
-                                            :items="taskStatuses"
-                                            label="Status"
-                                            prepend-inner-icon="mdi-list-status"
-                                        />
-                                    </v-col>
-                                </v-row>
-                                <v-text-field
-                                    v-model="taskForm.due_date"
-                                    label="Due Date"
-                                    type="date"
-                                    prepend-inner-icon="mdi-calendar"
-                                />
-                                <v-row class="mt-2">
-                                    <v-col>
-                                        <v-btn type="submit" color="primary" :loading="taskFormLoading">Create Task</v-btn>
-                                    </v-col>
-                                </v-row>
-                            </v-form>
-                        </v-card-text>
-                    </v-card>
+                <div v-if="selected === 'tasks'">
+                    <ClubTasksPage />
                 </div>
 
                 <div v-if="selected === 'attendance'">
-                    <club-attendance-page></club-attendance-page>
+                    <ClubAttendancePage />
                 </div>
 
-                <div v-if="selected === 'manageMember'" class="mt-6">
-                    <v-card>
-                        <v-card-title>Settings</v-card-title>
-                        <v-card-text>
-                            <div>Manage club settings, roles, and integration options here.</div>
-                        </v-card-text>
-                    </v-card>
+                <div v-if="selected === 'settings'">
+                    <ClubSettingsPage />
                 </div>
 
             </v-container>
