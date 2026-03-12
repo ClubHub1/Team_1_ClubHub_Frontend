@@ -24,7 +24,8 @@ Main Home Site Structure, Mounted on initialization
     }
 
     async function logoutUser() {
-        await authStore.logout
+        await authStore.logout()
+        router.push('/')
     }
     
     const links = {

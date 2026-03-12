@@ -6,6 +6,7 @@
   import { validateHeaderName } from 'http';
   import { useAuthStore } from './stores/auth';
   import { feathersClient } from './backendAPI';
+  import useUserStore from './stores/user';
 
   const registerForm = ref(null)
   const show1 = ref(false)
@@ -17,6 +18,8 @@
   const authStore = useAuthStore()
   const error = ref('')
   const loading = ref(false)
+
+  const userStore = useUserStore()
 
   //test for valid user input
   const valid = ref(false)
@@ -101,11 +104,18 @@
       console.log(error.value)
       if(error.value == ''){
         console.log("Trying login")
-        await authStore.authenticate({
+        const loginRes = await authStore.authenticate({
           strategy: 'local',
           email: new_email.value,
           password: new_password.value,
         });
+
+        if(loginRes){
+          userStore.setEmail(res.User?.email)
+          userStore.setId(res.User?.id)
+          userStore.setFirstName(res.User?.first_name)
+          userStore.setLastName(res.User?.last_name)
+        }
         const redirectTo = authStore.loginRedirect || '/dashboard'
         authStore.loginRedirect = null
       // Save user/orgs for later pages if you want

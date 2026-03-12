@@ -1,176 +1,113 @@
-<script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import Icon from './components/icon.vue'
-import { feathersClient } from './backendAPI'
+<template>
+    <v-container>
+        <v-toolbar flat height="100" color="primary" dark>
+            <v-toolbar-title class="mr-5 flex text-center text-h2 font-weight-bold">Your Clubs</v-toolbar-title>
+        </v-toolbar>
 
+        <v-row justify="center" class="mt-4" dense>
+            <v-col cols="12" v-if="loading">
+                <v-progress-circular indeterminate color="primary"></v-progress-circular>
+            </v-col>
+
+            <v-col cols="12" v-else-if="error">
+                <v-alert type="error" dense outlined>{{ error }}</v-alert>
+            </v-col>
+
+            <v-col cols="12" v-else-if="clubs.length === 0">
+                <v-card outlined>
+                    <v-card-text>No clubs found.</v-card-text>
+                </v-card>
+            </v-col>
+
+            <v-col cols="12" sm="6" md="4" v-for="(club, index) in clubs" :key="index">
+                <v-card outlined height="180">
+                    <v-card-title class="font-weight-bold text-center headline">{{ club.name }}</v-card-title>
+                    <v-card-text class="text--secondary">
+                        {{ club.description || "No description provided." }}, {{ index }}
+                    </v-card-text>
+                    <v-card-actions class="justify-center">
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" @click="goToManage(index)">Manage</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-col>
+        </v-row>
+        <v-row justify="center" class="mt-10">
+            <v-btn color="primary" to='/registerClub'>Register A New Club Here!</v-btn>
+        </v-row>
+    </v-container>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { feathersClient } from './backendAPI'
+import useUserStore from './stores/user'
+import useClubStore from './stores/clubStore'
+
+
+const clubStore = useClubStore()
+const userStore = useUserStore()
+const clubs = ref([])
+const loading = ref(true)
+const error = ref(null)
 const router = useRouter()
 
-const searchQuery = ref("")
-const selectedTags = ref<string[]>([])
-const selectedStatus = ref<string[]>([])
-const allTags = ref(["Sports", "Technology", "Arts", "Community", "Academic",
-  "Competitive", "Volunteering", "Gaming", "Coding", "Music",
-  "Strategy", "Leadership", "Cultural", "Health & Wellness", "Engineering",
-  "Business", "Science", "Pre-Med", "Law", "Environmental"])
+async function fetchClubs() {
+    try {
+        //console.log(userStore.id)
+        const res = await(feathersClient.service("ClubMembership").find({
+            query: {
+                $select: ['clubid'],
+                userid: userStore.id
+            }
+        }))
+        //console.log(res)
+        const clubIds = res.data;
+        //console.log(clubIds)
+        const ids = []
+        for(const clubId of clubIds){
+            ids.push(clubId.clubid)
+        }
+        const clubRes = await(feathersClient.service("Club").find({
+            query: {
+                club_id: {
+                    $in: ids
+                }
+            }
+        }))
 
-const clubs = ref<any[]>([])
-const loading = ref(false)
+        console.log(clubRes)
 
-const headers = [
-  { title: "Club Name", key: "name", sortable: true },
-  { title: "Status", key: "activity_status", sortable: true },
-  { title: "Description", key: "description", sortable: false },
-]
-
-// Fetch clubs from backend
-onMounted(async () => {
-  loading.value = true
-  try {
-    const res = await feathersClient.service("Club").find()
-    console.log(res)
-    const data = res.data
-    clubs.value = Array.isArray(data) ? data : data ?? []
-
-  } catch (e) {
-    console.error('Failed to load clubs:', e)
-  } finally {
-    loading.value = false
-  }
-})
-
-const filteredClubs = computed(() => {
-  return clubs.value.filter(club => {
-    const q = searchQuery.value.toLowerCase()
-    const matchSearch = !q || club.name?.toLowerCase().includes(q) ||
-      club.description?.toLowerCase().includes(q)
-    const matchStatus = selectedStatus.value.length === 0 ||
-      selectedStatus.value.includes(club.activity_status)
-    return matchSearch && matchStatus
-  })
-})
-
-const activeFilterCount = computed(() =>
-  selectedStatus.value.length + selectedTags.value.length
-)
-
-function clearFilters() {
-  selectedStatus.value = []
-  selectedTags.value = []
-  searchQuery.value = ''
+        if (!res) throw new Error(res.statusText)
+        clubs.value = clubRes.data
+    } catch (e) {
+        error.value = e.message || 'Failed to load clubs.'
+    } finally {
+        loading.value = false
+    }
 }
+
+function goToManage(id) {
+    //console.log(id)
+    console.log(clubs.value[0])
+    clubStore.setName(clubs.value[id].name)
+    clubStore.setDescription(clubs.value[id].description)
+    clubStore.setId(clubs.value[id].club_id)
+    router.push(`/clubDash`)
+}
+
+onMounted(fetchClubs)
 </script>
 
-<template>
-  <v-app>
-    <v-main>
-      <v-container>
-        <v-row justify="center">
-          <v-col cols="12" sm="8">
-            <h1 class="text-h4 mb-2">Discover Clubs and Organizations</h1>
-            <p class="text-medium-emphasis mb-4">
-              {{ clubs.length }} clubs available at UNR
-            </p>
-
-            <v-text-field
-              v-model="searchQuery"
-              label="Find a club"
-              prepend-inner-icon="mdi-magnify"
-              clearable
-              hide-details
-              variant="outlined" />
-          </v-col>
-        </v-row>
-
-        <v-row class="mt-6">
-          <!-- Filters Sidebar -->
-          <v-col cols="12" md="3">
-            <v-card class="pa-4" elevation="2">
-              <div class="d-flex align-center justify-space-between mb-2">
-                <h3 class="text-h6">Filters</h3>
-                <v-chip v-if="activeFilterCount > 0" size="small" color="primary"
-                  @click="clearFilters" closable>
-                  {{ activeFilterCount }} active
-                </v-chip>
-              </div>
-              <v-divider class="my-3" />
-
-              <p class="text-overline text-medium-emphasis mb-2">Status</p>
-              <div class="d-flex flex-wrap gap-2 mb-4">
-                <v-chip
-                  v-for="s in ['Active', 'Inactive']" :key="s"
-                  :variant="selectedStatus.includes(s) ? 'flat' : 'outlined'"
-                  :color="selectedStatus.includes(s) ? 'primary' : 'default'"
-                  size="small" class="cursor-pointer"
-                  @click="selectedStatus.includes(s)
-                    ? selectedStatus.splice(selectedStatus.indexOf(s), 1)
-                    : selectedStatus.push(s)">
-                  {{ s }}
-                </v-chip>
-              </div>
-
-              <v-divider class="mb-3" />
-              <p class="text-overline text-medium-emphasis mb-2">Tags</p>
-              <v-autocomplete
-                v-model="selectedTags"
-                :items="allTags"
-                multiple
-                chips
-                closable-chips
-                clearable
-                density="compact"
-                variant="outlined"
-                label="Filter by interest"
-                hide-details />
-
-              <v-btn v-if="activeFilterCount > 0" class="mt-4" variant="text"
-                color="error" block prepend-icon="mdi-close" @click="clearFilters">
-                Clear All
-              </v-btn>
-            </v-card>
-          </v-col>
-
-          <!-- Club Table -->
-          <v-col cols="12" md="9">
-            <div class="d-flex align-center justify-space-between mb-3">
-              <span class="text-body-2 text-medium-emphasis">
-                Showing <strong>{{ filteredClubs.length }}</strong> of {{ clubs.length }} clubs
-              </span>
-            </div>
-
-            <v-data-table
-              :headers="headers"
-              :items="filteredClubs"
-              :loading="loading"
-              item-value="id"
-              class="elevation-2"
-              :items-per-page="25">
-
-              <template #item.activity_status="{ item }">
-                <v-chip
-                  :color="item.activity_status === 'Active' ? 'success' : 'grey'"
-                  size="small" variant="flat">
-                  {{ item.activity_status }}
-                </v-chip>
-              </template>
-
-              <template #item.description="{ item }">
-                <span class="text-body-2">
-                  {{ item.description || '—' }}
-                </span>
-              </template>
-
-              <template #no-data>
-                <div class="text-center py-8">
-                  <v-icon size="48" color="grey-lighten-1">mdi-magnify-close</v-icon>
-                  <p class="mt-2 text-medium-emphasis">No clubs match your search.</p>
-                  <v-btn variant="text" color="primary" @click="clearFilters">Clear filters</v-btn>
-                </div>
-              </template>
-            </v-data-table>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
-  </v-app>
-</template>
+<style scoped>
+.v-toolbar {
+    border-radius: 4px;
+}
+.v-card {
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+</style>
