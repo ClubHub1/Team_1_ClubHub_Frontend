@@ -1,15 +1,14 @@
 <script setup lang="ts">
-    import { ref, onMounted } from 'vue'
+    import { ref } from 'vue'
     import { feathersClient } from './backendAPI'
     import useUserStore from './stores/user'
 
     const userStore = useUserStore()
 
-    const firstName = ref('')
-    const lastName = ref('')
-    const email = ref('')
+    const firstName = ref(userStore.firstName)
+    const lastName = ref(userStore.lastName)
+    const email = ref(userStore.email)
 
-    const loading = ref(false)
     const saving = ref(false)
     const error = ref('')
     const success = ref(false)
@@ -18,29 +17,6 @@
     const nameRules = [
         (v: string) => !!v || 'This field is required'
     ]
-
-    onMounted(async () => {
-        loading.value = true
-        error.value = ''
-        try {
-            const res = await feathersClient.service('User').find({
-                query: {
-                    id: userStore.id
-                }
-            })
-            if (res.data.length === 1) {
-                const user = res.data[0]
-                firstName.value = user.first_name
-                lastName.value = user.last_name
-                email.value = user.email
-            }
-        } catch (err) {
-            error.value = 'Failed to load profile. Please try again.'
-            console.error(err)
-        } finally {
-            loading.value = false
-        }
-    })
 
     async function saveProfile() {
         if (!valid.value) return
@@ -66,13 +42,15 @@
     <v-container class="pa-6" max-width="600">
         <h1 class="text-h4 mb-6">My Profile</h1>
 
-        <v-progress-circular v-if="loading" indeterminate color="primary" class="d-flex mx-auto mt-10" />
-
-        <v-card v-else elevation="2" class="pa-4">
+        <v-card elevation="2" class="pa-4">
             <v-card-title class="mb-2">
                 <v-icon icon="mdi-account-circle" size="28" class="mr-2" />
                 Account Information
             </v-card-title>
+
+            <v-card-subtitle class="text-h6 mb-4">
+                {{ userStore.first_name }} {{ userStore.last_name }}
+            </v-card-subtitle>
 
             <v-card-text>
                 <v-alert v-if="success" type="success" variant="tonal" class="mb-4" closable @click:close="success = false">
