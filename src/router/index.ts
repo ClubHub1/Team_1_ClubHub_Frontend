@@ -11,6 +11,9 @@ import Dashboard from '../dashboard.vue'
 import AboutPage from '../aboutPage.vue'
 import ClubDashboard from '../clubDashboard.vue'
 import ClubsList from '@/clubsList.vue'
+import ProfilePage from '../profilePage.vue'
+
+
 
 const routes = [
     { 
@@ -64,6 +67,12 @@ const routes = [
         path: '/clubsList',
         component: ClubsList,
         meta: { requiresAuth:true }
+    },
+    { 
+        path: '/profile', 
+        name: 'profile', 
+        component: ProfilePage, 
+        meta: { requiresAusth:true }
     }
 ]
 
