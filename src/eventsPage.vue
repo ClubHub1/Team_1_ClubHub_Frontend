@@ -4,7 +4,7 @@ import { feathersClient } from '@/backendAPI'
 
 
 interface Club {
-      id: number
+      club_id: number
       name: string
       tags: string[]
 }
@@ -38,37 +38,59 @@ const headers = [
 ]
 
 const allTags = [
-    { label: 'Academic', value: 'academic' },
-    { label: 'Activism', value: 'activism' },
-    { label: 'Athletic', value: 'athletic' },
-    { label: 'Career Development', value: 'career_dev' },
-    { label: 'Civic', value: 'civic' },
-    { label: 'Community Service', value: 'community_svc' },
-    { label: 'Cooking', value: 'cooking' },
-    { label: 'Crafts & Arts', value: 'crafts_arts' },
-    { label: 'Cultural / Language', value: 'cultural_lang' },
-    { label: 'Dance', value: 'dance' },
-    { label: 'Environment', value: 'environment' },
-    { label: 'Faith', value: 'faith' },
-    { label: 'Gaming', value: 'gaming' },
-    { label: 'Greek Life', value: 'greek_life' },
-    { label: 'Health', value: 'health' },
-    { label: 'Honor Societies', value: 'honor_societies' },
-    { label: 'Leadership', value: 'leadership' },
-    { label: 'Literary',  value: 'literary' },
-    { label: 'Martial Arts', value: 'martial_arts' },
-    { label: 'Media', value: 'media' },
-    { label: 'Music', value: 'music' },
-    { label: 'Outdoor Recreation', value: 'outdoor_rec' },
-    { label: 'Political', value: 'political' },
-    { label: 'Pre-Professional', value: 'pre_professional' },
-    { label: 'Research', value: 'research' },
-    { label: 'Social', value: 'social' },
-    { label: 'Competitive Sports', value: 'sports_comp' },
-    { label: 'Non-Competitive Sports', value: 'sports_noncomp' },
-    { label: 'Intramural Sports', value: 'sports_intramural' },
-    { label: 'STEM', value: 'stem' },
-    { label: 'Student Government', value: 'student_gov'},
+  { label: 'Academic', value: 'academic' },
+  { label: 'Activism', value: 'activism' },
+  { label: 'API', value: 'api' },
+  { label: 'Athletic', value: 'athletic' },
+  { label: 'Black / African', value: 'black_african' },
+  { label: 'Career Development', value: 'career_dev' },
+  { label: 'Christian', value: 'christian' },
+  { label: 'Civic', value: 'civic' },
+  { label: 'Competitive Sports', value: 'sports_comp' },
+  { label: 'Non-Competitive Sports', value: 'sports_noncomp' },
+  { label: 'Community Service', value: 'community_svc' },
+  { label: 'Cooking', value: 'cooking' },
+  { label: 'Crafts & Arts', value: 'crafts_arts' },
+  { label: 'Cultural / Language', value: 'cultural_lang' },
+  { label: 'Dance', value: 'dance' },
+  { label: 'Democratic Engagement', value: 'democratic_engagement' },
+  { label: 'Environment', value: 'environment' },
+  { label: 'Faith', value: 'faith' },
+  { label: 'Greek Life', value: 'greek_life' },
+  { label: 'Gaming', value: 'gaming' },
+  { label: 'Gender & Sexuality', value: 'gender_sexuality' },
+  { label: 'Health', value: 'health' },
+  { label: 'Honor Societies', value: 'honor_societies' },
+  { label: 'Indigenous', value: 'indigenous' },
+  { label: 'International', value: 'international' },
+  { label: 'Intramural Sports', value: 'sports_intramural' },
+  { label: 'Jewish', value: 'jewish' },
+  { label: 'Lake Tahoe', value: 'lake_tahoe' },
+  { label: 'Latinx', value: 'latinx' },
+  { label: 'Leadership', value: 'leadership' },
+  { label: 'Literary', value: 'literary' },
+  { label: 'Martial Arts', value: 'martial_arts' },
+  { label: 'Media', value: 'media' },
+  { label: 'Men of Color', value: 'men_of_color' },
+  { label: 'MENA', value: 'mena' },
+  { label: 'Multicultural', value: 'multicultural' },
+  { label: 'Music', value: 'music' },
+  { label: 'Muslim', value: 'muslim' },
+  { label: 'Neurodiversity', value: 'neurodiversity' },
+  { label: 'Outdoor Recreation', value: 'outdoor_rec' },
+  { label: 'Political', value: 'political' },
+  { label: 'Pre-Professional', value: 'pre_professional' },
+  { label: 'Religious', value: 'religious' },
+  { label: 'Research', value: 'research' },
+  { label: 'Social', value: 'social' },
+  { label: 'Social Justice', value: 'social_justice' },
+  { label: 'Special Interest', value: 'special_interest' },
+  { label: 'STEM', value: 'stem' },
+  { label: 'Student Government', value: 'student_gov' },
+  { label: 'Student Resources', value: 'student_resources' },
+  { label: 'Theater', value: 'theater' },
+  { label: 'Women of Color', value: 'women_of_color' },
+  { label: 'Women-Centered', value: 'women_centered' },
 ]
 
 async function fetchEvents() {
@@ -77,11 +99,11 @@ async function fetchEvents() {
 
       try {
             const clubRes = await (feathersClient.service('Club') as any).find({
-                  query: { $select: ['id', 'name', 'tags'], $limit: 500 }
+                  query: { $select: ['club_id', 'name'], $limit: 500 }
             })
             clubs.value = clubRes.data as Club[]
             const clubMap = new Map<number, Club>(
-                  (clubs.value).map((c: Club) => [c.id, c])
+                  (clubs.value).map((c: Club) => [c.club_id, c])
             )
             const eventQuery: Record<string, any> = {
                         $sort:  { start_datetime: 1 },
@@ -103,7 +125,7 @@ async function fetchEvents() {
             if (selectedTags.value.length > 0) {
                   const matchingClubIds = clubs.value
                   .filter((c: Club) => c.tags?.some((t: string) => selectedTags.value.includes(t)))
-                  .map((c: Club) => c.id)
+                  .map((c: Club) => c.club_id)
                   if (matchingClubIds.length === 0) {
                         events.value = []
                         loading.value = false
