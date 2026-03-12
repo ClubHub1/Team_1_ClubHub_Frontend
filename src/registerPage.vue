@@ -94,7 +94,7 @@
         first_name: first_name.value,
         last_name: last_name.value,
         email: new_email.value,
-        role: 'User',
+        role: 'student',
         created_at: nowString
         }
       ).catch(err =>{
@@ -130,7 +130,7 @@
     } catch (e: any) {
       if(error.value == ''){
         error.value =
-        authStore.error.message ||
+        //authStore.error.message ||
         'Login failed. Please check your email and password.'
       }
     } finally {

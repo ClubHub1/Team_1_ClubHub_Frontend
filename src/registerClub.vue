@@ -80,7 +80,7 @@
           if(newClub){
             const newPresident = await feathersClient.service("ClubMembership")._create({
               userid: userStore.id,
-              role: 'President',
+              role: 'president',
               clubid: newClub.club_id,
               is_active: true,
               dues_paid: false

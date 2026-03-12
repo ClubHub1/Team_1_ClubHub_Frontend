@@ -7,6 +7,7 @@
     import useUserStore from './stores/user'
     import { getTasks, type Task } from '@/services/tasks'
     import ClubEventsPage from './clubEventsPage.vue'
+    import financesPage from './financesPage.vue'
 
     const auth = useAuthStore()
     const clubStore = useClubStore()
@@ -114,14 +115,14 @@
     onMounted(setPermissions)
 
     const sections = [
-        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['Advisor','President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
-        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['Advisor', 'President', 'Treasurer']},
-        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['Advisor', 'President']}
+        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['advisor','president', 'vice_pres', 'treasurer', 'secretary', 'member']},
+        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['advisor', 'president', 'treasurer']},
+        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['advisor', 'president']}
     ]
 
     const activeSections = computed(() => {
@@ -239,13 +240,22 @@
         console.log(res)
         if(res.data.length == 1){
             console.log(res.data[0])
+            const newMember = await(feathersClient.service("ClubMembership")._create({
+                clubid: clubStore.id,
+                userid: res.data[0].id,
+                role: role.value,
+                is_active: true,
+                dues_paid: false,
+            }))
+            console.log(newMember)
+            selected.value = "members"
         } else {
             console.log("User does not exist in the system- check their email")
         }
     }
 
     function cellPropHandler({item, column}){
-        if (item.memberRole == 'President' && column.title == 'Role') {
+        if (item.memberRole == 'president' && column.title == 'Role') {
             return { class: 'bg-error rounded px-2 py-1' };
         }
         return null;
@@ -306,6 +316,13 @@
         <v-main>
             <v-container class="pa-6">
 
+                <div v-if="selected === 'dashboard'">
+                    <v-row justify="center">
+                        <h1 class="mt-8">Welcome to your club's management page!</h1>
+                        <p class="text-center mt-8">Here you can view and create events or tasks, manage your club's members and invite new ones, and edit your club's finances! Hover over the navigation bar on the left to get started.</p>
+                    </v-row>
+                </div>
+
                 <div v-if="selected === 'createEvent'">
                     <club-events-page></club-events-page>
                 </div>
@@ -362,18 +379,18 @@
                             <v-menu>
                                 <template v-slot:activator="{props}"> 
                                     <v-btn v-if="role == 'Select Role'" v-bind="props" color="primary">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'President'" v-bind="props" color="purple-darken-3">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Vice President'" v-bind="props" color="cyan-darken-1">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Treasurer'" v-bind="props" color="amber-lighten-1">{{ role }}</v-btn>
-                                    <v-btn v-if="role == 'Secretary'" v-bind="props" color="green-darken-3">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'president'" v-bind="props" color="purple-darken-3">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'vice_pres'" v-bind="props" color="cyan-darken-1">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'treasurer'" v-bind="props" color="amber-lighten-1">{{ role }}</v-btn>
+                                    <v-btn v-if="role == 'secretary'" v-bind="props" color="green-darken-3">{{ role }}</v-btn>
                                     <v-btn v-if="role == 'Member'" v-bind="props" color="blue-grey-lighten-1">{{ role }}</v-btn>
                                 </template>
 
                                 <v-list>
-                                    <v-list-item @click="role = 'President'" :active="role==='President'">President</v-list-item>
-                                    <v-list-item @click="role = 'Vice President'" :active="role==='Vice President'">Vice President</v-list-item>
-                                    <v-list-item @click="role = 'Treasurer'" :active="role==='Treasurer'">Treasurer</v-list-item>
-                                    <v-list-item @click="role = 'Secretary'" :active="role==='Secretary'">Secretary</v-list-item>
+                                    <v-list-item @click="role = 'president'" :active="role==='president'">president</v-list-item>
+                                    <v-list-item @click="role = 'vice_pres'" :active="role==='vice_pres'">vice_pres</v-list-item>
+                                    <v-list-item @click="role = 'treasurer'" :active="role==='treasurer'">treasurer</v-list-item>
+                                    <v-list-item @click="role = 'secretary'" :active="role==='secretary'">secretary</v-list-item>
                                     <v-list-item @click="role = 'Member'" :active="role==='Member'">Member</v-list-item>
                                 </v-list>
                             </v-menu>
@@ -392,30 +409,7 @@
                 </div>
 
                 <div v-if="selected === 'finances'" class="mt-6">
-                    <v-row>
-                        <v-col cols="8">
-                            <v-card>
-                                <v-card-title>Transactions</v-card-title>
-                                <v-card-text>
-                                    <v-data-table :items="transactions" :headers="[{title:'Date',key:'date'},{title:'Description',key:'description'},{title:'Amount',key:'amount'}]" />
-                                    <v-row class="mt-4">
-                                        <v-col>
-                                            <v-btn @click="addTransaction">Add Transaction</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-card-text>
-                            </v-card>
-                        </v-col>
-
-                        <v-col cols="4">
-                            <v-card>
-                                <v-card-title>Balance</v-card-title>
-                                <v-card-text>
-                                    <div class="text-h5">{{ balance }}</div>
-                                </v-card-text>
-                            </v-card>
-                        </v-col>
-                    </v-row>
+                    <finances-page></finances-page>
                 </div>
 
                 <div v-if="selected === 'settings'" class="mt-6">
