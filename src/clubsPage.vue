@@ -27,7 +27,11 @@ const headers = [
 onMounted(async () => {
   loading.value = true
   try {
-    const res = await feathersClient.service("Club").find()
+    const res = await feathersClient.service("Club").find({
+      query: {
+        $limit: 25
+      }
+    })
     console.log(res)
     const data = res.data
     clubs.value = Array.isArray(data) ? data : data ?? []

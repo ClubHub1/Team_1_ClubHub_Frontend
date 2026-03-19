@@ -8,6 +8,10 @@
     import { type Task } from '@/services/tasks'
     import ClubEventsPage from './clubEventsPage.vue'
     import financesPage from './financesPage.vue'
+    import pCardRequest from './pCardRequest.vue'
+    import travelRequest from './travelRequest.vue'
+import TravelRequest from './travelRequest.vue'
+import attendancePage from './attendancePage.vue'
 
     const auth = useAuthStore()
     const clubStore = useClubStore()
@@ -115,15 +119,17 @@
     onMounted(setPermissions)
 
     const sections = [
-        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['Advisor','President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
-        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['Advisor', 'President', 'Treasurer']},
-        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary', 'Member']},
-        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'editTask', label: 'Edit Tasks', icon: 'mdi-clipboard-edit-outline', roles:['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary']},
-        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['Advisor', 'President']}
+        { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles:['advisor','president', 'vice_pres', 'treasurer', 'secretary', 'member']},
+        { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'createAnnouncement', label: 'Create Announcement', icon: 'mdi-bullhorn-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles:['advisor', 'president', 'treasurer']},
+        { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member']},
+        { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'editTask', label: 'Edit Tasks', icon: 'mdi-clipboard-edit-outline', roles:['advisor', 'president', 'vice_pres', 'treasurer', 'secretary']},
+        { id: 'forms', label: 'Club Forms', icon: 'mdi-clipboard', roles:['advisor', 'president', 'vice_pres', 'treasurer']},
+        { id: 'attendance', label: 'Attendance', icon: 'mdi-account-check', roles: ['Advisor', 'President', 'Vice President', 'Treasurer', 'Secretary', 'Member'] },
+        { id: 'settings', label: 'Settings', icon:'mdi-cog', roles:['advisor', 'president']},
     ]
 
     const activeSections = computed(() => {
@@ -692,6 +698,32 @@
                             </v-card>
                         </v-col>
                     </v-row>
+                </div>
+
+                <div v-if="selected === 'attendance'">
+                    <ClubAttendancePage />
+                </div>
+
+                <div v-if="selected==='forms'">
+
+                    <v-btn @click="selected='pcard'">
+                        P Card Form
+                    </v-btn>
+
+                    <v-btn class="ml-14" @click="selected='travelreq'">
+                        Travel Request Form
+                    </v-btn>
+
+                </div>
+
+                <div v-if="selected==='pcard'">
+                    <p-card-request></p-card-request>
+
+                </div>
+
+                <div v-if="selected==='travelreq'">
+                    <travel-request></travel-request>
+
                 </div>
 
                 <div v-if="selected === 'manageMember'" class="mt-6">

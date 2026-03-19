@@ -111,10 +111,10 @@
         });
 
         if(loginRes){
-          userStore.setEmail(res.User?.email)
-          userStore.setId(res.User?.id)
-          userStore.setFirstName(res.User?.first_name)
-          userStore.setLastName(res.User?.last_name)
+          userStore.setEmail(loginRes.User?.email)
+          userStore.setId(loginRes.User?.id)
+          userStore.setFirstName(loginRes.User?.first_name)
+          userStore.setLastName(loginRes.User?.last_name)
         }
         const redirectTo = authStore.loginRedirect || '/dashboard'
         authStore.loginRedirect = null
@@ -128,13 +128,13 @@
         }
       }
     } catch (e: any) {
-      if(error.value == ''){
-        error.value =
+      if(error.value != ''){
         //authStore.error.message ||
         'Login failed. Please check your email and password.'
       }
     } finally {
       loading.value = false
+      router.push('/dashboard')
     }
   }
     
