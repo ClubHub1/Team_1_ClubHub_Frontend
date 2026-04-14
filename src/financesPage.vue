@@ -18,12 +18,18 @@ const formValid = ref(false)
 const formLoading = ref(false)
 
 const newTx = ref({
-  title: '', amount: null as number | null, type: 'expense',
-  category: '', transaction_date: new Date().toISOString().slice(0, 10), notes: '',
+  title: '',
+  amount: null as number | null,
+  type: 'expense',
+  category: '',
+  transaction_date: new Date().toISOString().slice(0, 10),
+  business_purpose: '',
+  receipt_url: '',
+  is_cash_sale: false,
 })
 
 const expenseCategories = ['Event Expenses','Office Supplies','Food & Beverage','Transportation','Technology','Marketing','Dues / Fees','Other']
-const incomeCategories = ['Dues Collected','Fundraising','Sponsorship','University Allocation','Donations','Other']
+const incomeCategories = ['Dues Collected','Fundraising','Sponsorship','University Allocation','Donations','Cash Sale','Other']
 const allCategories = computed(() => newTx.value.type === 'income' ? incomeCategories : expenseCategories)
 const allFilterCategories = [...new Set([...expenseCategories, ...incomeCategories])]
 
@@ -73,11 +79,24 @@ async function submitTransaction() {
     })
     const rows = membership.data ?? membership
     const clubId = rows[0]?.clubid
-    const signedAmount = newTx.value.type === 'expense' ? -Math.abs(newTx.value.amount!) : Math.abs(newTx.value.amount!)
+    const signedAmount = newTx.value.type === 'expense'
+      ? -Math.abs(newTx.value.amount!)
+      : Math.abs(newTx.value.amount!)
+
+    // Auto-set category to Cash Sale if is_cash_sale is checked
+    const category = (newTx.value.type === 'income' && newTx.value.is_cash_sale)
+      ? 'Cash Sale'
+      : newTx.value.category
+
     const created = await feathersClient.service('transactions').create({
-      club: clubId, created_by: user.user_id, title: newTx.value.title,
-      amount: signedAmount, category: newTx.value.category,
-      transaction_date: newTx.value.transaction_date, notes: newTx.value.notes,
+      club: clubId,
+      created_by: user.user_id,
+      title: newTx.value.title,
+      amount: signedAmount,
+      category,
+      transaction_date: newTx.value.transaction_date,
+      notes: newTx.value.business_purpose,
+      receipt_url: newTx.value.receipt_url,
     })
     transactions.value.unshift(created)
     addDialog.value = false
@@ -103,8 +122,11 @@ async function doDelete() {
 }
 
 function resetForm() {
-  newTx.value = { title: '', amount: null, type: 'expense', category: '',
-    transaction_date: new Date().toISOString().slice(0, 10), notes: '' }
+  newTx.value = {
+    title: '', amount: null, type: 'expense', category: '',
+    transaction_date: new Date().toISOString().slice(0, 10),
+    business_purpose: '', receipt_url: '', is_cash_sale: false,
+  }
 }
 function showSnack(message: string, color: string) { snackbar.value = { show: true, message, color } }
 function formatCurrency(val: number) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val) }
@@ -205,11 +227,16 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
                   <v-icon size="20">{{ tx.amount > 0 ? 'mdi-arrow-down-circle' : 'mdi-arrow-up-circle' }}</v-icon>
                 </v-avatar>
               </template>
-              <v-list-item-title class="font-weight-medium">{{ tx.title }}</v-list-item-title>
+              <v-list-item-title class="font-weight-medium">
+                {{ tx.title }}
+                <v-chip v-if="tx.category === 'Cash Sale'" size="x-small" color="green" variant="flat" class="ml-2">Cash</v-chip>
+              </v-list-item-title>
               <v-list-item-subtitle>
                 <v-chip size="x-small" variant="tonal" color="blue-grey" class="mr-2">{{ tx.category }}</v-chip>
                 <span class="text-caption text-medium-emphasis">{{ formatDate(tx.transaction_date) }}</span>
                 <span v-if="tx.notes" class="text-caption text-medium-emphasis ml-2">· {{ tx.notes }}</span>
+                <v-chip v-if="tx.receipt_url" size="x-small" variant="text" color="primary" class="ml-1"
+                  :href="tx.receipt_url" target="_blank" prepend-icon="mdi-receipt">Receipt</v-chip>
               </v-list-item-subtitle>
               <template #append>
                 <div class="d-flex align-center gap-3">
@@ -225,8 +252,8 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
       </v-card>
     </v-container>
 
-    <!-- Add Dialog -->
-    <v-dialog v-model="addDialog" max-width="520" persistent>
+    <!-- Add Transaction Dialog -->
+    <v-dialog v-model="addDialog" max-width="560" persistent>
       <v-card rounded="lg">
         <v-card-title class="pa-5 pb-3">
           <v-icon start color="primary">mdi-plus-circle</v-icon> Add Transaction
@@ -234,11 +261,24 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
         <v-divider />
         <v-card-text class="pa-5">
           <v-form v-model="formValid" @submit.prevent="submitTransaction">
+
+            <!-- Income / Expense Toggle -->
             <v-btn-toggle v-model="newTx.type" mandatory rounded="lg" class="mb-5 w-100">
-              <v-btn value="expense" color="error" style="flex:1"><v-icon start>mdi-minus-circle</v-icon>Expense</v-btn>
-              <v-btn value="income" color="success" style="flex:1"><v-icon start>mdi-plus-circle</v-icon>Income</v-btn>
+              <v-btn value="expense" color="error" style="flex:1">
+                <v-icon start>mdi-minus-circle</v-icon>Expense
+              </v-btn>
+              <v-btn value="income" color="success" style="flex:1">
+                <v-icon start>mdi-plus-circle</v-icon>Income
+              </v-btn>
             </v-btn-toggle>
-            <v-text-field v-model="newTx.title" label="Title" :rules="[required]" variant="outlined" class="mb-3" />
+
+            <!-- Cash Sale checkbox (income only) -->
+            <v-checkbox v-if="newTx.type === 'income'" v-model="newTx.is_cash_sale"
+              label="This is a cash sale" color="success" density="compact" class="mb-2 mt-n2" hide-details />
+
+            <v-text-field v-model="newTx.title" label="Title" :rules="[required]"
+              variant="outlined" class="mb-3" />
+
             <v-row dense>
               <v-col cols="6">
                 <v-text-field v-model.number="newTx.amount" label="Amount ($)" type="number"
@@ -250,9 +290,24 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
                   :rules="[required]" variant="outlined" />
               </v-col>
             </v-row>
-            <v-select v-model="newTx.category" :items="allCategories" label="Category"
-              :rules="[required]" variant="outlined" class="mb-3" />
-            <v-textarea v-model="newTx.notes" label="Notes (optional)" variant="outlined" rows="2" hide-details />
+
+            <!-- Category — auto-set to Cash Sale if checkbox ticked -->
+            <v-select v-if="!newTx.is_cash_sale" v-model="newTx.category" :items="allCategories"
+              label="Category" :rules="[required]" variant="outlined" class="mb-3" />
+            <v-text-field v-else value="Cash Sale" label="Category" variant="outlined"
+              class="mb-3" readonly prepend-inner-icon="mdi-cash" />
+
+            <!-- Business Purpose (replaces Notes) -->
+            <v-textarea v-model="newTx.business_purpose" label="Business Purpose"
+              prepend-inner-icon="mdi-briefcase-outline"
+              hint="Describe the business reason for this transaction"
+              persistent-hint variant="outlined" rows="2" class="mb-3" />
+
+            <!-- Receipt URL -->
+            <v-text-field v-model="newTx.receipt_url" label="Receipt URL (optional)"
+              prepend-inner-icon="mdi-receipt" variant="outlined"
+              hint="Link to a scanned receipt or Google Drive file" persistent-hint />
+
           </v-form>
         </v-card-text>
         <v-divider />
