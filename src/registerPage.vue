@@ -1,268 +1,197 @@
-
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import { errorMessages } from 'vue/compiler-sfc';
-  import Icon from './components/icon.vue'
-  import { validateHeaderName } from 'http';
-  import { useAuthStore } from './stores/auth';
-  import { feathersClient } from './backendAPI';
-  import useUserStore from './stores/user';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from './stores/auth'
+import { feathersClient } from './backendAPI'
+import useUserStore from './stores/user'
 
-  const registerForm = ref(null)
-  const show1 = ref(false)
-  const show2 = ref(true)
+const registerForm = ref(null)
+const authStore = useAuthStore()
+const userStore = useUserStore()
+const router = useRouter()
 
-  const router = useRouter()
+const error = ref('')
+const loading = ref(false)
+const valid = ref(false)
+const showPassword = ref(false)
 
-  //Setup stores and logic for form submission
-  const authStore = useAuthStore()
-  const error = ref('')
-  const loading = ref(false)
+const first_name = ref('')
+const last_name = ref('')
+const new_email = ref('')
+const new_password = ref('')
+const rePassword = ref('')
 
-  const userStore = useUserStore()
+const emailRules = [
+  (v: string) => !!v || 'E-mail is required.',
+  (v: string) => /^[a-z0-9._%+-]+@unr\.edu$/i.test(v) || 'Must be a valid UNR email (@unr.edu).',
+]
+const passwordRules = [
+  (v: string) => !!v || 'Password is required.',
+  (v: string) => v.length >= 8 || 'At least 8 characters.',
+  (v: string) => /[A-Z]/.test(v) || 'At least 1 uppercase letter.',
+  (v: string) => /\d/.test(v) || 'At least 1 number.',
+  (v: string) => /[^A-Za-z0-9]/.test(v) || 'At least 1 special character.',
+  (v: string) => v === rePassword.value || 'Passwords must match.',
+]
+const nameRules = [
+  (v: string) => (!!v && v.length < 31) || 'Required, max 30 characters.',
+]
 
-  //test for valid user input
-  const valid = ref(false)
+function refreshPasswordRules() {
+  (registerForm.value as any)?.validate()
+}
 
-  //Store user inputs to be passed to create()
-  const first_name = ref('')
-  const last_name = ref('')
-  const new_email = ref('')
-  const new_password = ref('')
-  const rePassword = ref('')
+async function handleSubmit() {
+  if (!valid.value) return
+  error.value = ''
+  loading.value = true
+  try {
+    const now = new Date().toISOString()
+    await feathersClient.service('User')._create({
+      password: new_password.value,
+      first_name: first_name.value,
+      last_name: last_name.value,
+      email: new_email.value,
+      role: 'student',
+      created_at: now,
+    }).catch((err: any) => { error.value = err.message })
 
-  //RULES FOR FORM
-  const emailRules = [
-    (value: string) => {
-      if (value) return true
-      return 'E-mail is required.'
-    },
-    (value: string) => {
-      if (/^[a-z0-9._%+-]+@unr\.edu$/i.test(value)) return true
-      return 'E-mail must be valid and school issued ("@unr").'
-    },
-  ]
-
-  const passwordRules = [
-    (value: string) => {
-      if (value) return true
-      return 'Password is required and passwords must match.'
-    },
-    (value: string) => {
-      if (value.length >= 8) return true
-      return 'Password must be at least 8 characters long.'
-    },
-    (value: string) => {
-      if (/[A-Z]/.test(value)) return true
-      return 'Password must contain at least 1 uppercase character.'
-    },
-    (value: string) => {
-      if (/\d/.test(value)) return true
-      return 'Password must contain at least 1 number.'
-    },
-    (value: string) => {
-      if (/[^A-Za-z0-9]/.test(value)) return true
-      return 'Password must contain at least 1 special character.'
-    },
-    (value: string) => {
-      if (value == rePassword.value) return true
-      return 'Passwords must match.'
-    }
-  ]
-
-  const nameRules = [
-    (value: string) => {
-      if (value && (value.length < 11)) return true
-      return 'Name is required and must be less than 10 characters.'
-    }
-  ]
-
-  async function handleSubmit() {
-  // if form validation fails, don't submit
-    if (!valid.value) return
-
-    error.value = ''
-    loading.value = true
-
-    try {
-      console.log('trying registration, please wait')
-      const now = new Date()
-      const nowString = now.toISOString()
-      console.log(nowString)
-      await feathersClient.service("User")._create({
-        password: new_password.value,
-        first_name: first_name.value,
-        last_name: last_name.value,
-        email: new_email.value,
-        role: 'student',
-        created_at: nowString
-        }
-      ).catch(err =>{
-        error.value = err.message
-      })
+    if (!error.value) {
       authStore.clearError()
-      console.log(error.value)
-      if(error.value == ''){
-        console.log("Trying login")
-        const loginRes = await authStore.authenticate({
-          strategy: 'local',
-          email: new_email.value,
-          password: new_password.value,
-        });
-
-        if(loginRes){
-          userStore.setEmail(loginRes.User?.email)
-          userStore.setId(loginRes.User?.id)
-          userStore.setFirstName(loginRes.User?.first_name)
-          userStore.setLastName(loginRes.User?.last_name)
-        }
-        const redirectTo = authStore.loginRedirect || '/dashboard'
-        authStore.loginRedirect = null
-      // Save user/orgs for later pages if you want
-      // localStorage.setItem('user', JSON.stringify(data.user))
-      // localStorage.setItem('organizations', JSON.stringify(data.organizations))
-
-      // After successful login, send them somewhere (change route as needed)
-        if(authStore.isInitDone){
-          router.push(redirectTo)
-        }
+      const loginRes = await authStore.authenticate({
+        strategy: 'local',
+        email: new_email.value,
+        password: new_password.value,
+      })
+      if (loginRes) {
+        userStore.setEmail(loginRes.User?.email)
+        userStore.setId(loginRes.User?.id)
+        userStore.setFirstName(loginRes.User?.first_name)
+        userStore.setLastName(loginRes.User?.last_name)
       }
-    } catch (e: any) {
-      if(error.value != ''){
-        //authStore.error.message ||
-        'Login failed. Please check your email and password.'
-      }
-    } finally {
-      loading.value = false
-      router.push('/dashboard')
     }
+  } catch (e: any) {
+    // handled above
+  } finally {
+    loading.value = false
+    if (authStore.isAuthenticated) router.push('/dashboard')
   }
-    
-</script>
-
-Method to auto-refresh form validity rules
-<script lang="ts">
-
-  export default {
-
-    methods: {
-      refreshPasswordRules(){
-        this.$refs.registerForm.validate()
-      },
-    },
-  }
+}
 </script>
 
 <template>
   <v-app>
-    <v-main>
+    <v-main style="background: #f5f5f5;">
+      <v-container class="d-flex align-center justify-center py-10">
+        <v-row justify="center" align="start" style="width: 100%;">
 
-      <v-container>
-        <v-row justify="center">
-
-            <v-card class = "bg-primary mt-10" :height="($vuetify.display.width<=822) ? 300 : 850" width="400">
-              <v-card-title class="text-wrap ml-3 mt-3 mb-10" width="400">
-                <h1>Let's elevate your club experience.</h1>
-              </v-card-title>
+          <!-- Left accent panel -->
+          <v-col cols="12" md="5" class="d-none d-md-flex">
+            <v-card
+              color="primary"
+              rounded="lg"
+              elevation="0"
+              class="pa-10 d-flex flex-column justify-center"
+              style="min-height: 600px; width: 100%;"
+            >
+              <v-icon size="48" color="white" class="mb-6">mdi-rocket-launch</v-icon>
+              <h1 class="text-h3 font-weight-bold text-white mb-4">Let's elevate your club experience.</h1>
+              <p class="text-white" style="opacity: 0.8; font-size: 1.05rem;">
+                Join ClubHub to manage events, connect with members, track finances, and take your organization to the next level.
+              </p>
             </v-card>
-          
-          <v-column>
-            <v-card class = "mt-10" height="850" width="400" text>
+          </v-col>
 
-              <v-card-title class="text-center">
-                <h2>Create an Account</h2>
-              </v-card-title>
+          <!-- Register form -->
+          <v-col cols="12" md="5">
+            <v-card rounded="lg" elevation="2" class="pa-8">
+              <div class="mb-6">
+                <h2 class="text-h5 font-weight-bold mb-1">Create an Account</h2>
+                <p class="text-medium-emphasis">Use your UNR email address to register.</p>
+              </div>
 
-              <v-container class="ml-3">
-                <v-form ref="registerForm" v-model="valid" class="mt-7" @submit.prevent="handleSubmit">
+              <v-alert v-if="error" type="error" variant="tonal" rounded="lg" class="mb-4">{{ error }}</v-alert>
 
-                  <v-row
-                  >
+              <v-form ref="registerForm" v-model="valid" @submit.prevent="handleSubmit">
+                <v-row dense>
+                  <v-col cols="6">
                     <v-text-field
                       v-model="first_name"
                       :rules="nameRules"
-                      label="First name"
+                      label="First Name"
+                      prepend-inner-icon="mdi-account"
+                      variant="outlined"
                       required
-                      class="mr-6 mb-5"
-                    ></v-text-field>
-                  </v-row>
-
-                  <v-row
-                  >
+                    />
+                  </v-col>
+                  <v-col cols="6">
                     <v-text-field
                       v-model="last_name"
                       :rules="nameRules"
-                      label="Last name"
+                      label="Last Name"
+                      variant="outlined"
                       required
-                      class="mr-6 mb-5"
-                    ></v-text-field>
-                  </v-row>
+                    />
+                  </v-col>
+                </v-row>
 
-                  <v-row>
-                    <v-text-field
-                      v-model="new_email"
-                      :rules="emailRules"
-                      label="E-mail"
-                      required
-                      class="mr-6 mb-5"
-                    ></v-text-field>
-                  </v-row>
+                <v-text-field
+                  v-model="new_email"
+                  :rules="emailRules"
+                  label="UNR Email"
+                  prepend-inner-icon="mdi-email-outline"
+                  variant="outlined"
+                  class="mb-3"
+                  required
+                />
 
-                  <v-row>
-                      <v-text-field
-                        v-model="new_password"
-                        :append-inner-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
-                        hint="At least 8 characters, 1 uppercase, 1 number, 1 special character"
-                        persistent-hint
-                        :rules='passwordRules'
-                        label="Password"
-                        :type="show1 ? 'text' : 'password'"
-                        required
-                        class="mr-6 mb-5"
-                        @click:append-inner="show1 = !show1"
-                      ></v-text-field>
-                  </v-row>
+                <v-text-field
+                  v-model="new_password"
+                  :rules="passwordRules"
+                  label="Password"
+                  prepend-inner-icon="mdi-lock-outline"
+                  :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                  :type="showPassword ? 'text' : 'password'"
+                  variant="outlined"
+                  hint="8+ chars, 1 uppercase, 1 number, 1 special character"
+                  persistent-hint
+                  class="mb-3"
+                  required
+                  @click:append-inner="showPassword = !showPassword"
+                />
 
-                  <v-row>
-                      <v-text-field
-                        v-model="rePassword"
-                        :append-inner-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
-                        :rules='passwordRules'
-                        label="Re-Enter Password"
-                        :type="show1 ? 'text' : 'password'"
-                        required
-                        @input="refreshPasswordRules"
-                        class="mr-6"
-                        @click:append-inner="show1 = !show1"
-                      ></v-text-field>
-                  </v-row>
+                <v-text-field
+                  v-model="rePassword"
+                  :rules="passwordRules"
+                  label="Confirm Password"
+                  prepend-inner-icon="mdi-lock-check-outline"
+                  :type="showPassword ? 'text' : 'password'"
+                  variant="outlined"
+                  class="mb-5"
+                  required
+                  @input="refreshPasswordRules"
+                />
 
-                  <!-- error from backend -->
-                  <v-row v-if="error != ''" class="mt-3">
-                    <v-alert type="error" variant="tonal" class="mr-6">
-                      {{ error }}
-                    </v-alert>
-                  </v-row>
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  size="large"
+                  block
+                  rounded="lg"
+                  :loading="loading"
+                  :disabled="!valid"
+                  prepend-icon="mdi-account-plus"
+                >Create Account</v-btn>
+              </v-form>
 
-                  <v-row class="justify-center">
-                    <v-btn 
-                      type="submit"
-                      class="mt-7 bg-primary"
-                      width="100"
-                      :loading = "loading"
-                    >
-                      Register
-                    </v-btn>
-                  </v-row>
-
-                  <v-row class="justify-center mt-6">
-                    Already have an account? &nbsp;  <router-link to="/login">Sign in here.</router-link>
-                  </v-row>
-
-                </v-form>
-              </v-container>
+              <v-divider class="my-5" />
+              <p class="text-center text-body-2 text-medium-emphasis">
+                Already have an account?
+                <router-link to="/login" class="text-primary font-weight-medium">Sign in here</router-link>
+              </p>
             </v-card>
-          </v-column>
+          </v-col>
+
         </v-row>
       </v-container>
     </v-main>

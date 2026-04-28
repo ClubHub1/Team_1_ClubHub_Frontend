@@ -1,15 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Icon from './components/icon.vue'
-import { login } from '@/services/auth'   // uses src/services/auth.ts
 import { useAuthStore } from './stores/auth'
-import { feathersClient } from './backendAPI'
-import { storeToRefs } from 'pinia'
-import { useFeathers } from './composables/feathersCompose'
 import useUserStore from './stores/user'
 
-//Creates AuthStore object for Authentication
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const router = useRouter()
@@ -17,149 +11,124 @@ const router = useRouter()
 const valid = ref(false)
 const email = ref('')
 const password = ref('')
-
-// Vuetify-style rules: return true or an error string
-const emailRules = [
-  (value: string) => {
-    if (value) return true
-    return 'E-mail is required.'
-  },
-  (value: string) => {
-    if (/.+@.+\..+/.test(value)) return true
-    return 'E-mail must be valid.'
-  },
-]
-
-const passwordRules = [
-  (value: string) => {
-    if (value) return true
-    return 'Password is required.'
-  },
-]
-
-//login state
+const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
 
-// handle form submit
-async function handleSubmit() {
-  // if form validation fails, don't submit
-  if (!valid.value) return
+const emailRules = [
+  (v: string) => !!v || 'E-mail is required.',
+  (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid.',
+]
+const passwordRules = [
+  (v: string) => !!v || 'Password is required.',
+]
 
+async function handleSubmit() {
+  if (!valid.value) return
   error.value = ''
   loading.value = true
-
   try {
-    console.log('trying login, please wait')
     authStore.clearError()
     const res = await authStore.authenticate({
       strategy: 'local',
       email: email.value,
       password: password.value,
-    });
-
-    console.log('login response', res)
-    //console.log(res.User?.id)
-    if(res){
+    })
+    if (res) {
       userStore.setEmail(res.User?.email)
       userStore.setId(res.User?.id)
       userStore.setFirstName(res.User?.first_name)
       userStore.setLastName(res.User?.last_name)
     }
-    
-
     const redirectTo = authStore.loginRedirect || '/dashboard'
     authStore.loginRedirect = null
-
-    // Save user/orgs for later pages if you want
-    // localStorage.setItem('user', JSON.stringify(data.user))
-    // localStorage.setItem('organizations', JSON.stringify(data.organizations))
-
-    // After successful login, send them somewhere (change route as needed)
-
   } catch (e: any) {
-    error.value =
-      authStore.error.message ||
-      'Login failed. Please check your email and password.'
+    error.value = authStore.error?.message || 'Login failed. Please check your email and password.'
   } finally {
     loading.value = false
-    if(authStore.isAuthenticated){
-      router.push('/dashboard')
-    }
+    if (authStore.isAuthenticated) router.push('/dashboard')
   }
 }
-
 </script>
 
 <template>
   <v-app>
-    <v-main>
-      <v-container>
-        <v-row justify="center">
-            <v-card class = "bg-primary mt-10" :height="($vuetify.display.width<=822) ? 300 : 500" width="400">
-              <v-card-title class="ml-3 mt-3">
-                <h1>Welcome <br/>
-                Back.</h1>
-              </v-card-title>
+    <v-main style="background: #f5f5f5;">
+      <v-container class="d-flex align-center justify-center" style="min-height: 100vh;">
+        <v-row justify="center" align="center" style="width: 100%;">
+
+          <!-- Left accent panel -->
+          <v-col cols="12" md="5" class="d-none d-md-flex">
+            <v-card
+              color="primary"
+              rounded="lg"
+              elevation="0"
+              class="pa-10 d-flex flex-column justify-center"
+              style="min-height: 520px; width: 100%;"
+            >
+              <v-icon size="48" color="white" class="mb-6">mdi-account-group</v-icon>
+              <h1 class="text-h3 font-weight-bold text-white mb-4">Welcome<br/>Back.</h1>
+              <p class="text-white" style="opacity: 0.8; font-size: 1.1rem;">
+                Sign in to manage your clubs, track events, and stay connected with your campus community.
+              </p>
             </v-card>
+          </v-col>
 
-            <v-card class = "mt-10" height="500" width="400" text>
-              <v-card-title class="text-center">
-                <h2>Sign In</h2>
-              </v-card-title>
+          <!-- Login form -->
+          <v-col cols="12" md="5">
+            <v-card rounded="lg" elevation="2" class="pa-8">
+              <div class="mb-6">
+                <h2 class="text-h5 font-weight-bold mb-1">Sign In</h2>
+                <p class="text-medium-emphasis">Enter your UNR credentials to continue.</p>
+              </div>
 
-              <v-container class="ml-3">
-                <!-- NOTE: @submit.prevent calls our handleSubmit -->
-                <v-form v-model="valid" class="mt-7" @submit.prevent="handleSubmit">
-              
-                  <v-row>
-                    <v-text-field
-                      v-model="email"
-                      :rules="emailRules"
-                      label="E-mail"
-                      required
-                      class="mr-6 mb-5"
-                    />
-                  </v-row>
+              <v-alert v-if="authStore.error" type="error" variant="tonal" rounded="lg" class="mb-4">
+                {{ authStore.error.message }}
+              </v-alert>
 
-                  <v-row>
-                    <v-text-field
-                      v-model="password"
-                      :rules="passwordRules"
-                      label="Password"
-                      type="password"
-                      required
-                      class="mr-6"
-                    />
-                  </v-row>
+              <v-form v-model="valid" @submit.prevent="handleSubmit">
+                <v-text-field
+                  v-model="email"
+                  :rules="emailRules"
+                  label="Email Address"
+                  prepend-inner-icon="mdi-email-outline"
+                  variant="outlined"
+                  class="mb-3"
+                  required
+                />
+                <v-text-field
+                  v-model="password"
+                  :rules="passwordRules"
+                  label="Password"
+                  prepend-inner-icon="mdi-lock-outline"
+                  :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                  :type="showPassword ? 'text' : 'password'"
+                  variant="outlined"
+                  class="mb-5"
+                  required
+                  @click:append-inner="showPassword = !showPassword"
+                />
 
-                  <!-- error from backend -->
-                  <v-row v-if="authStore.error" class="mt-3">
-                    <v-alert type="error" variant="tonal" class="mr-6">
-                      {{ authStore.error.message }}
-                    </v-alert>
-                  </v-row>
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  size="large"
+                  block
+                  rounded="lg"
+                  :loading="loading"
+                  :disabled="!valid"
+                  prepend-icon="mdi-login"
+                >Sign In</v-btn>
+              </v-form>
 
-                  <v-row class="justify-center">
-                    <v-btn
-                      type="submit"
-                      class="mt-7 bg-primary"
-                      width="100"
-                      :loading="loading"
-                    >
-                      Login
-                    </v-btn>
-                  </v-row>
-
-                  <v-row class="justify-center mt-6"> 
-                    <p>
-                      Don't have an account?
-                      <router-link to="/register">Register Here!</router-link>
-                    </p>
-                  </v-row>
-                </v-form>
-              </v-container>
+              <v-divider class="my-5" />
+              <p class="text-center text-body-2 text-medium-emphasis">
+                Don't have an account?
+                <router-link to="/register" class="text-primary font-weight-medium">Register Here</router-link>
+              </p>
             </v-card>
+          </v-col>
+
         </v-row>
       </v-container>
     </v-main>
