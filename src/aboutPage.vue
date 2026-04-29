@@ -45,98 +45,73 @@ SETUP SCRIPT FOR IMPORTS, FUNCTION DECLARATION, GLOBAL VARIABLES, ETC
 ]
 </script>
 
-
-MAIN PAGE STRUCTURE BEGINS HERE
 <template>
   <v-app>
-    <v-main style="min-height: 100vh; display: flex; flex-direction: column;">
-      <v-container fluid class = "ma-0 pa-0">
-        <v-row dense no-gutters>
-          <v-col cols="12">
-            <!-- PAGE BANNER PATH HERE -->
+    <v-main>
+      <!-- Hero Banner -->
+      <div style="position: relative; min-height: 320px; background: #041E42; overflow: hidden;">
+        <v-img
+          src="/homepageBG.png"
+          cover
+          style="position: absolute; inset: 0; opacity: 0.2;"
+        />
+        <div class="d-flex flex-column align-center justify-center" style="position: relative; z-index: 1; min-height: 320px; padding: 60px 24px;">
+          <h1 class="text-h3 font-weight-bold text-white text-center mb-2">By students, for students.</h1>
+          <p class="text-white text-center text-h6" style="opacity: 0.75;">Meet the team behind ClubHub</p>
+        </div>
+      </div>
 
-            <v-card
-              color="surface-variant"
-              image= /homepageBG.png
-              height="350"
-              rounded="0"
-            >
-              <v-card-title style="background-color: rgba(0, 0, 0, 0.5); color: white;" class="d-flex mt-15 justify-center mb-5">
-                <span class="font-weight-bold text-h4">
-                  <div class="text-center mt-10">
-                    <h1>By students, for students.</h1>
-                    <h4>Meet the team behind ClubHub</h4>
-                  </div>
-                </span>
-              </v-card-title>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
-      <v-container fluid class = "ma-0 pa-0">
-        <v-row dense>
-          <v-col cols="12">
-            <v-card
-              color=#041E42
-              height="100"
-              rounded="0"
-              transition
+      <!-- Tagline strip -->
+      <div style="background: #041E42; padding: 16px 24px;">
+        <p class="text-center text-white font-italic text-h6 ma-0">CS 426 — Team 1 — Spring 2026</p>
+      </div>
+
+      <!-- About Section -->
+      <v-container max-width="1000" class="py-12">
+
+        <v-card elevation="2" rounded="lg" class="pa-8 mb-10">
+          <div class="text-center mb-4">
+            <v-icon color="primary" size="28" class="mb-2">mdi-information-outline</v-icon>
+            <h2 class="text-h5 font-weight-bold">About ClubHub</h2>
+          </div>
+          <v-divider class="mb-5" />
+          <p class="text-body-1 text-medium-emphasis" style="line-height: 1.8;">
+            ClubHub is a tool designed to help and assist club officers on campus with organizational duties and management
+            by addressing the lack of an effective, centralized platform for officers and leaders of on-campus clubs and
+            organizations, aiming to provide success through efficient leadership. We provide an accessible UI, streamlined
+            functions and information storage for essential club information such as finances, supplemental forms, contacts,
+            and events, along with a backend API for seamless communication between the database and frontend.
+          </p>
+        </v-card>
+
+        <!-- Team Section -->
+        <v-card elevation="2" rounded="lg" class="pa-8 mb-6">
+          <div class="text-center mb-4">
+            <v-icon color="primary" size="28" class="mb-2">mdi-account-group</v-icon>
+            <h2 class="text-h5 font-weight-bold mb-1">About Team 1</h2>
+            <p class="text-medium-emphasis">The developers behind ClubHub</p>
+          </div>
+        </v-card>
+        <v-divider class="mb-6" />
+          <v-row>
+            <v-col
+              v-for="member in team"
+              :key="member.name"
+              cols="12" sm="6" md="4"
             >
               <v-card-title>
                   <div class="text-center mt-5 font-italic">
                     <h2>CS 456 - Team 1 - Spring 2026</h2>
                   </div>
               </v-card-title>
-            </v-card>
           </v-col>
         </v-row>
       </v-container>
       <!-- END TITLE/HEADER STRUCTURE -->
         
       <!-- BASIC STRUCTURE FOR A NEW SECTION WITH THE SAME FORMATTING STARTS HERE -->
-      <v-container fluid>
-        <v-row class = "d-flex justify-center">
-          
-            <v-card class=" mt-15 mb-10 bg-white" flat color="transparent" height="300" width="1200">
-              <v-card-title class=" d-flex justify-center rounded-xl bg-primary">
-                <span class="font-weight-bold text-h4">
-                  <h1>About ClubHub</h1>
-                </span>
-              </v-card-title>
-              <v-card-text class="bg-surface mt-10 text-center">
-                <P>
-        Our webpage ClubHub will be a tool that can help and assist club officers on 
-      campus with organizational duties and management by addressing the lack of 
-      an effective, centralized webpage for officers and leaders of on campus clubs 
-      and organizations, aiming to provide success through efficient leadership. 
-      We intend to satisfy these needs by designing an accessible UI and frontend, 
-      streamlined functions and information storage for essential club information 
-      such as finances, supplemental forms, contacts, and events, and the continued 
-      improvement of a backend API to allow for seamless communication between the 
-      database and frontend. This document will go more over about the project, its 
-      significance, changes, and impacts, along with how responsibilities and 
-      risks are monitored and managed throughout the team. 
-                </P>
-              </v-card-text>
-            </v-card>
-         
-        </v-row>
-      </v-container>
+     
       <!-- AND ENDS HERE; TO MAKE A NEW SECTION, COPY AND PASTE ABOVE/BELOW -->
-
-      <v-container fluid>
-        <v-row class = "d-flex justify-center">
-          
-            <v-card class=" mt-15 bg-white" flat color="transparent" width="700">
-              <v-card-title class="d-flex justify-center text-center rounded-xl bg-primary">
-                <span>
-                  <h1>Meet the Team</h1>
-                </span>
-              </v-card-title>
-            </v-card>
-         
-        </v-row>
-      </v-container>
 
       <v-container fluid>
         <v-row class="mb-6 d-flex justify-center">

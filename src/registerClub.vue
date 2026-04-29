@@ -11,12 +11,11 @@
     import { useUserStore } from './stores/user';
     import { useRouter } from 'vue-router';
 
-    const registerForm = ref(null)
-    const authStore = useAuthStore()
-    const clubStore = useClubStore()
-    const userStore = useUserStore()
-    
-    const router = useRouter()
+const registerForm = ref(null)
+const authStore = useAuthStore()
+const clubStore = useClubStore()
+const userStore = useUserStore()
+const router = useRouter()
 
     //Setup stores and logic for form submission
     const error = ref('')
@@ -33,19 +32,12 @@
 
     //RULES FOR FORM
 
-    const nameRules = [
-        (value: string) => {
-          if (value && (value.length < 31)) return true
-          return 'Name is required and must be less than 30 characters.'
-        }
-    ]
-
-    const descRules = [
-        (value: string) => {
-            if (value && (value.length < 750)) return true
-            return 'Description is required and must be less than 750 characters.'
-        }
-    ]
+const nameRules = [
+  (v: string) => (!!v && v.length < 31) || 'Required, max 30 characters.',
+]
+const descRules = [
+  (v: string) => (!!v && v.length < 750) || 'Required, max 750 characters.',
+]
 
     const logoRules = [
         (value: any) => {
@@ -96,6 +88,10 @@
             throw err
         }
     }
+
+function refreshRules() {
+  (registerForm.value as any)?.validate()
+}
 
     async function handleSubmit() {
     // if form validation fails, don't submit
@@ -183,53 +179,61 @@ Method to auto-refresh form validity rules
 
 <template>
   <v-app>
-    <v-main>
+    <v-main style="background: #f5f5f5;">
+      <v-container class="d-flex align-center justify-center py-10">
+        <v-row justify="center" align="start" style="width: 100%;">
 
-      <v-container>
-        <v-row justify="center">
-          
-            <v-card class = "bg-primary mt-10" width="400">
-              <v-card-title class="ml-3 mt-3 mb-10 text-wrap">
-                <h1>Let's take your
-                club to the next level.</h1>
-              </v-card-title>
+          <!-- Left accent panel -->
+          <v-col cols="12" md="5" class="d-none d-md-flex">
+            <v-card
+              color="primary"
+              rounded="lg"
+              elevation="0"
+              class="pa-10 d-flex flex-column justify-center"
+              style="min-height: 500px; width: 100%;"
+            >
+              <v-icon size="48" color="white" class="mb-6">mdi-trophy</v-icon>
+              <h1 class="text-h3 font-weight-bold text-white mb-4">Let's take your club to the next level.</h1>
+              <p class="text-white" style="opacity: 0.8; font-size: 1.05rem;">
+                Register your club to get access to event management, member tracking, finances, and more.
+              </p>
             </v-card>
-        </v-row>
+          </v-col>
 
-        <v-row justify="center">
-            <v-card class = "d-flex flex-column h-100" width="400" text>
+          <!-- Form -->
+          <v-col cols="12" md="5">
+            <v-card rounded="lg" elevation="2" class="pa-8">
+              <div class="mb-6">
+                <h2 class="text-h5 font-weight-bold mb-1">Create a Club</h2>
+                <p class="text-medium-emphasis">Fill in the details to register your new organization.</p>
+              </div>
 
-              <v-card-title class="text-center">
-                <h2>Create a Club</h2>
-              </v-card-title>
+              <v-alert v-if="error" type="error" variant="tonal" rounded="lg" class="mb-4">{{ error }}</v-alert>
 
-              <v-container class="ml-3">
-                <v-form ref="registerForm" v-model="valid" class="mt-7" @submit.prevent="handleSubmit">
+              <v-form ref="registerForm" v-model="valid" @submit.prevent="handleSubmit">
+                <v-text-field
+                  v-model="club_name"
+                  :rules="nameRules"
+                  label="Club Name"
+                  prepend-inner-icon="mdi-account-group"
+                  variant="outlined"
+                  class="mb-4"
+                  required
+                />
 
-                  <v-row
-                  >
-                    <v-text-field
-                      v-model="club_name"
-                      :rules="nameRules"
-                      label="Club Name"
-                      required
-                      class="mr-6 mb-5"
-                    ></v-text-field>
-                  </v-row>
+                <v-textarea
+                  v-model="club_description"
+                  :rules="descRules"
+                  label="Description"
+                  prepend-inner-icon="mdi-text-box"
+                  variant="outlined"
+                  rows="6"
+                  counter="750"
+                  class="mb-5"
+                  required
+                />
 
-                  <v-row
-                  >
-                    <v-textarea
-                      v-model="club_description"
-                      :rules="descRules"
-                      label="Description:"
-                      required
-                      class="mr-6 mb-5"
-                      height="400"
-                    ></v-textarea>
-                  </v-row>
-
-                  <v-row class="mb-5">
+                <v-row class="mb-5">
                     <v-file-input
                       v-model="logo_file"
                       @change="handleFileSelect"
@@ -239,7 +243,7 @@ Method to auto-refresh form validity rules
                       class="mr-6"
                       :rules="logoRules"
                     ></v-file-input>
-                  </v-row>
+                </v-row>
 
                   <v-row v-if="logo_preview" class="mb-5 justify-center">
                     <v-img
@@ -250,27 +254,19 @@ Method to auto-refresh form validity rules
                     ></v-img>
                   </v-row>
 
-                  <!-- error from backend -->
-                  <v-row v-if="error != ''" class="mt-3">
-                    <v-alert type="error" variant="tonal" class="mr-6">
-                      {{ error }}
-                    </v-alert>
-                  </v-row>
-
-                  <v-row class="justify-center">
-                    <v-btn 
-                      type="submit"
-                      class="mt-7 bg-primary mb-15"
-                      width="100"
-                      :loading = "loading"
-                    >
-                      Register
-                    </v-btn>
-                  </v-row>
-
-                </v-form>
-              </v-container>
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  size="large"
+                  block
+                  rounded="lg"
+                  :loading="loading"
+                  :disabled="!valid"
+                  prepend-icon="mdi-plus-circle"
+                >Register Club</v-btn>
+              </v-form>
             </v-card>
+          </v-col>
         </v-row>
       </v-container>
     </v-main>
