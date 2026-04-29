@@ -55,7 +55,7 @@ async function handleSubmit() {
   <v-app>
     <v-main style="background: #f5f5f5;">
       <v-container class="d-flex align-center justify-center" style="min-height: 100vh;">
-        <v-row justify="center" align="center" style="width: 100%;">
+        <v-row justify="center" align="center" style="width: 100%; gap: 16px;" no-gutters>
 
           <!-- Left accent panel -->
           <v-col cols="12" md="5" class="d-none d-md-flex">
@@ -64,7 +64,7 @@ async function handleSubmit() {
               rounded="lg"
               elevation="0"
               class="pa-10 d-flex flex-column justify-center"
-              style="min-height: 520px; width: 100%;"
+              style="height: 480px; width: 100%;"
             >
               <v-icon size="48" color="white" class="mb-6">mdi-account-group</v-icon>
               <h1 class="text-h3 font-weight-bold text-white mb-4">Welcome<br/>Back.</h1>
@@ -76,7 +76,7 @@ async function handleSubmit() {
 
           <!-- Login form -->
           <v-col cols="12" md="5">
-            <v-card rounded="lg" elevation="2" class="pa-8">
+            <v-card rounded="lg" elevation="2" class="pa-8" style="height: 480px;">
               <div class="mb-6">
                 <h2 class="text-h5 font-weight-bold mb-1">Sign In</h2>
                 <p class="text-medium-emphasis">Enter your UNR credentials to continue.</p>

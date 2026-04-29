@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { feathersClient } from '../backendAPI'
-import useClubStore from '../stores/clubStore'
-import useUserStore from '../stores/user'
-import useMemberStore from '../stores/memberStore'
+import { feathersClient } from '@/backendAPI'
+import useClubStore from '@/stores/clubStore'
+import useUserStore from '@/stores/user'
+import useMemberStore from '@/stores/memberStore'
 
 const clubStore = useClubStore()
 const userStore = useUserStore()

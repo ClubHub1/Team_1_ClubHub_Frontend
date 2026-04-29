@@ -18,12 +18,60 @@ const formValid = ref(false)
 const formLoading = ref(false)
 
 const newTx = ref({
-  title: '', amount: null as number | null, type: 'expense',
-  category: '', transaction_date: new Date().toISOString().slice(0, 10), notes: '',
+  title: '',
+  amount: null as number | null,
+  type: 'expense',
+  category: '',
+  transaction_date: new Date().toISOString().slice(0, 10),
+  payment_method: '',
+  vendor_payer: '',
+  receipt_url: '',
+  reference_number: '',
+  notes: '',
 })
 
-const expenseCategories = ['Event Expenses','Office Supplies','Food & Beverage','Transportation','Technology','Marketing','Dues / Fees','Other']
-const incomeCategories = ['Dues Collected','Fundraising','Sponsorship','University Allocation','Donations','Other']
+// Expanded categories
+const expenseCategories = [
+  'Event Expenses',
+  'Office Supplies',
+  'Food & Beverage',
+  'Transportation',
+  'Technology',
+  'Marketing / Printing',
+  'Dues / Fees',
+  'Venue / Facility',
+  'Equipment',
+  'Awards / Gifts',
+  'Travel & Lodging',
+  'Uniforms / Apparel',
+  'Other',
+]
+
+const incomeCategories = [
+  'Dues Collected',
+  'Fundraising',
+  'Cash Sale',
+  'Sponsorship',
+  'University Allocation',
+  'Donations',
+  'Grants',
+  'Ticket Sales',
+  'Merchandise Sales',
+  'Interest / Investment',
+  'Other',
+]
+
+const paymentMethods = [
+  'Cash',
+  'Check',
+  'Credit Card',
+  'P-Card',
+  'Bank Transfer',
+  'Venmo / PayPal',
+  'Zelle',
+  'Other',
+]
+
 const allCategories = computed(() => newTx.value.type === 'income' ? incomeCategories : expenseCategories)
 const allFilterCategories = [...new Set([...expenseCategories, ...incomeCategories])]
 
@@ -33,7 +81,7 @@ async function loadTransactions() {
   loading.value = true
   try {
     const user = authStore.user
-    const membership = await feathersClient.service("ClubMembership").find({
+    const membership = await feathersClient.service('ClubMembership').find({
       query: { userid: user.user_id, $limit: 1 }
     })
     const rows = membership.data ?? membership
@@ -51,7 +99,7 @@ async function loadTransactions() {
 
 const filteredTransactions = computed(() => transactions.value.filter((tx) => {
   const q = searchQuery.value.toLowerCase()
-  const matchSearch = !q || tx.title?.toLowerCase().includes(q) || tx.category?.toLowerCase().includes(q)
+  const matchSearch = !q || tx.title?.toLowerCase().includes(q) || tx.category?.toLowerCase().includes(q) || tx.vendor_payer?.toLowerCase().includes(q)
   const matchCat = !filterCategory.value || tx.category === filterCategory.value
   const matchType = !filterType.value ||
     (filterType.value === 'income' && tx.amount > 0) ||
@@ -73,11 +121,21 @@ async function submitTransaction() {
     })
     const rows = membership.data ?? membership
     const clubId = rows[0]?.clubid
-    const signedAmount = newTx.value.type === 'expense' ? -Math.abs(newTx.value.amount!) : Math.abs(newTx.value.amount!)
+    const signedAmount = newTx.value.type === 'expense'
+      ? -Math.abs(newTx.value.amount!)
+      : Math.abs(newTx.value.amount!)
     const created = await feathersClient.service('transactions').create({
-      club: clubId, created_by: user.user_id, title: newTx.value.title,
-      amount: signedAmount, category: newTx.value.category,
-      transaction_date: newTx.value.transaction_date, notes: newTx.value.notes,
+      club: clubId,
+      created_by: user.user_id,
+      title: newTx.value.title,
+      amount: signedAmount,
+      category: newTx.value.category,
+      transaction_date: newTx.value.transaction_date,
+      payment_method: newTx.value.payment_method,
+      vendor_payer: newTx.value.vendor_payer,
+      receipt_url: newTx.value.receipt_url,
+      reference_number: newTx.value.reference_number,
+      notes: newTx.value.notes,
     })
     transactions.value.unshift(created)
     addDialog.value = false
@@ -103,9 +161,14 @@ async function doDelete() {
 }
 
 function resetForm() {
-  newTx.value = { title: '', amount: null, type: 'expense', category: '',
-    transaction_date: new Date().toISOString().slice(0, 10), notes: '' }
+  newTx.value = {
+    title: '', amount: null, type: 'expense', category: '',
+    transaction_date: new Date().toISOString().slice(0, 10),
+    payment_method: '', vendor_payer: '', receipt_url: '',
+    reference_number: '', notes: '',
+  }
 }
+
 function showSnack(message: string, color: string) { snackbar.value = { show: true, message, color } }
 function formatCurrency(val: number) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val) }
 function formatDate(d: string) { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }
@@ -116,12 +179,16 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
 <template>
   <DashboardLayout>
     <v-container max-width="1100">
+
+      <!-- Page Header -->
       <div class="d-flex align-center justify-space-between mb-6">
         <div>
           <h1 class="text-h4 font-weight-bold">Club Finances</h1>
           <p class="text-medium-emphasis mt-1">Track income, expenses, and your club's balance.</p>
         </div>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="addDialog = true">Add Transaction</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" @click="addDialog = true">
+          Add Transaction
+        </v-btn>
       </div>
 
       <!-- Summary Cards -->
@@ -162,12 +229,20 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
       <v-card elevation="1" rounded="lg" class="pa-4 mb-4">
         <v-row align="center" dense>
           <v-col cols="12" sm="5">
-            <v-text-field v-model="searchQuery" label="Search transactions..."
-              prepend-inner-icon="mdi-magnify" variant="outlined" density="compact" clearable hide-details />
+            <v-text-field
+              v-model="searchQuery"
+              label="Search transactions..."
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined" density="compact" clearable hide-details
+            />
           </v-col>
           <v-col cols="12" sm="3">
-            <v-select v-model="filterCategory" :items="['', ...allFilterCategories]"
-              label="Category" variant="outlined" density="compact" clearable hide-details />
+            <v-select
+              v-model="filterCategory"
+              :items="['', ...allFilterCategories]"
+              label="Category"
+              variant="outlined" density="compact" clearable hide-details
+            />
           </v-col>
           <v-col cols="12" sm="4">
             <v-btn-toggle v-model="filterType" density="compact" rounded="lg" mandatory>
@@ -208,12 +283,21 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
               <v-list-item-title class="font-weight-medium">{{ tx.title }}</v-list-item-title>
               <v-list-item-subtitle>
                 <v-chip size="x-small" variant="tonal" color="blue-grey" class="mr-2">{{ tx.category }}</v-chip>
+                <span v-if="tx.payment_method" class="mr-2">
+                  <v-chip size="x-small" variant="tonal" color="purple">{{ tx.payment_method }}</v-chip>
+                </span>
                 <span class="text-caption text-medium-emphasis">{{ formatDate(tx.transaction_date) }}</span>
+                <span v-if="tx.vendor_payer" class="text-caption text-medium-emphasis ml-2">· {{ tx.vendor_payer }}</span>
                 <span v-if="tx.notes" class="text-caption text-medium-emphasis ml-2">· {{ tx.notes }}</span>
+                <span v-if="tx.receipt_url" class="ml-2">
+                  <a :href="tx.receipt_url" target="_blank" class="text-caption text-primary">
+                    <v-icon size="12">mdi-paperclip</v-icon> Receipt
+                  </a>
+                </span>
               </v-list-item-subtitle>
               <template #append>
-                <div class="d-flex align-center gap-3">
-                  <span :class="['text-h6','font-weight-bold', tx.amount > 0 ? 'text-success' : 'text-error']">
+                <div class="d-flex align-center" style="gap: 8px;">
+                  <span :class="['text-h6', 'font-weight-bold', tx.amount > 0 ? 'text-success' : 'text-error']">
                     {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
                   </span>
                   <v-btn icon="mdi-delete-outline" size="small" variant="text" color="grey" @click="confirmDelete(tx)" />
@@ -225,47 +309,147 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
       </v-card>
     </v-container>
 
-    <!-- Add Dialog -->
-    <v-dialog v-model="addDialog" max-width="520" persistent>
+    <!-- ── Add Transaction Dialog ── -->
+    <v-dialog v-model="addDialog" max-width="580" persistent>
       <v-card rounded="lg">
         <v-card-title class="pa-5 pb-3">
           <v-icon start color="primary">mdi-plus-circle</v-icon> Add Transaction
         </v-card-title>
         <v-divider />
-        <v-card-text class="pa-5">
+
+        <v-card-text class="pa-5" style="max-height: 70vh; overflow-y: auto;">
           <v-form v-model="formValid" @submit.prevent="submitTransaction">
+
+            <!-- Type Toggle -->
             <v-btn-toggle v-model="newTx.type" mandatory rounded="lg" class="mb-5 w-100">
-              <v-btn value="expense" color="error" style="flex:1"><v-icon start>mdi-minus-circle</v-icon>Expense</v-btn>
-              <v-btn value="income" color="success" style="flex:1"><v-icon start>mdi-plus-circle</v-icon>Income</v-btn>
+              <v-btn value="expense" color="error" style="flex:1">
+                <v-icon start>mdi-minus-circle</v-icon>Expense
+              </v-btn>
+              <v-btn value="income" color="success" style="flex:1">
+                <v-icon start>mdi-plus-circle</v-icon>Income
+              </v-btn>
             </v-btn-toggle>
-            <v-text-field v-model="newTx.title" label="Title" :rules="[required]" variant="outlined" class="mb-3" />
+
+            <!-- Basic Info -->
+            <p class="text-overline text-primary mb-3">Transaction Details</p>
+            <v-text-field
+              v-model="newTx.title"
+              label="Title / Description"
+              prepend-inner-icon="mdi-format-title"
+              :rules="[required]"
+              variant="outlined"
+              class="mb-3"
+            />
+
             <v-row dense>
               <v-col cols="6">
-                <v-text-field v-model.number="newTx.amount" label="Amount ($)" type="number"
-                  step="0.01" min="0.01" :rules="[required, positiveNumber]"
-                  prepend-inner-icon="mdi-currency-usd" variant="outlined" />
+                <v-text-field
+                  v-model.number="newTx.amount"
+                  label="Amount ($)"
+                  type="number"
+                  step="0.01" min="0.01"
+                  :rules="[required, positiveNumber]"
+                  prepend-inner-icon="mdi-currency-usd"
+                  variant="outlined"
+                />
               </v-col>
               <v-col cols="6">
-                <v-text-field v-model="newTx.transaction_date" label="Date" type="date"
-                  :rules="[required]" variant="outlined" />
+                <v-text-field
+                  v-model="newTx.transaction_date"
+                  label="Date"
+                  type="date"
+                  :rules="[required]"
+                  prepend-inner-icon="mdi-calendar"
+                  variant="outlined"
+                />
               </v-col>
             </v-row>
-            <v-select v-model="newTx.category" :items="allCategories" label="Category"
-              :rules="[required]" variant="outlined" class="mb-3" />
-            <v-textarea v-model="newTx.notes" label="Notes (optional)" variant="outlined" rows="2" hide-details />
+
+            <v-row dense>
+              <v-col cols="6">
+                <v-select
+                  v-model="newTx.category"
+                  :items="allCategories"
+                  label="Category"
+                  prepend-inner-icon="mdi-tag-outline"
+                  :rules="[required]"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-select
+                  v-model="newTx.payment_method"
+                  :items="paymentMethods"
+                  label="Payment Method"
+                  prepend-inner-icon="mdi-credit-card-outline"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+
+            <v-divider class="my-4" />
+
+            <!-- Vendor / Payer Info -->
+            <p class="text-overline text-primary mb-3">
+              {{ newTx.type === 'expense' ? 'Vendor Information' : 'Payer Information' }}
+            </p>
+            <v-text-field
+              v-model="newTx.vendor_payer"
+              :label="newTx.type === 'expense' ? 'Vendor / Merchant Name' : 'Payer / Source Name'"
+              :prepend-inner-icon="newTx.type === 'expense' ? 'mdi-store' : 'mdi-account'"
+              variant="outlined"
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="newTx.reference_number"
+              label="Reference / Check / Invoice Number (optional)"
+              prepend-inner-icon="mdi-pound"
+              variant="outlined"
+              class="mb-3"
+            />
+
+            <v-divider class="my-4" />
+
+            <!-- Receipt & Notes -->
+            <p class="text-overline text-primary mb-3">Receipt & Notes</p>
+            <v-text-field
+              v-model="newTx.receipt_url"
+              label="Receipt URL (optional)"
+              prepend-inner-icon="mdi-paperclip"
+              variant="outlined"
+              hint="Paste a link to a scanned receipt, Google Drive file, or image"
+              persistent-hint
+              class="mb-4"
+            />
+            <v-textarea
+              v-model="newTx.notes"
+              label="Additional Notes (optional)"
+              prepend-inner-icon="mdi-note-text"
+              variant="outlined"
+              rows="2"
+              hide-details
+            />
+
           </v-form>
         </v-card-text>
+
         <v-divider />
         <v-card-actions class="pa-4">
           <v-btn variant="text" @click="addDialog = false; resetForm()">Cancel</v-btn>
           <v-spacer />
-          <v-btn color="primary" :loading="formLoading" :disabled="!formValid"
-            @click="submitTransaction" prepend-icon="mdi-check">Save</v-btn>
+          <v-btn
+            color="primary"
+            rounded="lg"
+            :loading="formLoading"
+            :disabled="!formValid"
+            prepend-icon="mdi-check"
+            @click="submitTransaction"
+          >Save Transaction</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- Delete Dialog -->
+    <!-- ── Delete Dialog ── -->
     <v-dialog v-model="deleteDialog" max-width="380">
       <v-card rounded="lg">
         <v-card-title class="pa-5">Delete Transaction?</v-card-title>
@@ -275,11 +459,13 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
         <v-card-actions class="pa-4">
           <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
           <v-spacer />
-          <v-btn color="error" @click="doDelete" prepend-icon="mdi-delete">Delete</v-btn>
+          <v-btn color="error" prepend-icon="mdi-delete" @click="doDelete">Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">{{ snackbar.message }}</v-snackbar>
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.message }}
+    </v-snackbar>
   </DashboardLayout>
 </template>
