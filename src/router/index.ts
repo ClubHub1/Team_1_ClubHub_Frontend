@@ -13,8 +13,6 @@ import ClubDashboard from '../clubDashboard.vue'
 import ClubsList from '@/clubsList.vue'
 import ProfilePage from '../profilePage.vue'
 
-
-
 const routes = [
     { 
         path: '/', 
@@ -56,7 +54,7 @@ const routes = [
     { 
         path: '/about', 
         component: AboutPage,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: false }
     },
     {
         path: '/clubDash',
@@ -66,13 +64,13 @@ const routes = [
     {
         path: '/clubsList',
         component: ClubsList,
-        meta: { requiresAuth:true }
+        meta: { requiresAuth: true }
     },
     { 
         path: '/profile', 
         name: 'profile', 
         component: ProfilePage, 
-        meta: { requiresAusth:true }
+        meta: { requiresAuth: true }
     }
 ]
 
@@ -82,18 +80,15 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // If the route requires auth and the user is not authenticated, redirect to login
-    next({ name: 'login' });
+    next({ name: 'login' })
   } else if (to.name === 'login' && authStore.isAuthenticated) {
-    // If the user is authenticated and tries to access the login page, redirect to home
-    next({ name: 'home' });
+    next({ name: 'home' })
   } else {
-    // Otherwise, allow navigation
-    next();
+    next()
   }
-});
+})
 
-export default router;
+export default router

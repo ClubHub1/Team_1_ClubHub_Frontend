@@ -11,11 +11,13 @@ import financesPage from './financesPage.vue'
 import pCardRequest from './pCardRequest.vue'
 import travelRequest from './travelRequest.vue'
 import attendancePage from './attendancePage.vue'
+import resourceCheckout from './resourceCheckouts.vue'
 
 const auth = useAuthStore()
 const clubStore = useClubStore()
 const memberStore = useMemberStore()
 const userStore = useUserStore()
+
 
 const role = ref('Select Role')
 const email = ref('')
@@ -74,6 +76,7 @@ const sections = [
   { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
   { id: 'editTask', label: 'Edit Tasks', icon: 'mdi-clipboard-edit-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
   { id: 'forms', label: 'Club Forms', icon: 'mdi-clipboard', roles: ['advisor', 'president', 'vice_pres', 'treasurer'] },
+  { id: 'submissions', label: 'Form Submissions', icon: 'mdi-file-document-multiple-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
   { id: 'attendance', label: 'Attendance', icon: 'mdi-account-check', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
   { id: 'settings', label: 'Settings', icon: 'mdi-cog', roles: ['advisor', 'president'] },
 ]
@@ -144,6 +147,7 @@ async function loadTasks() {
 function handleNavClick(sectionId: string) {
   selected.value = sectionId
   if (sectionId === 'tasks' || sectionId === 'editTask') loadTasks()
+  if (sectionId === 'submissions') loadSubmissions()
 }
 
 // Edit task
@@ -220,6 +224,75 @@ async function addMember() {
 }
 
 function manageMember(id: number) { console.log('MANAGING MEMBER WITH MEMBERSHIP ID:', id) }
+
+// ── Form Submissions ──
+const selectedSubmission = ref<any>(null)
+const newComment = ref('')
+const submissions = ref<any[]>([])
+const submissionsLoading = ref(false)
+
+const formTypeMap: Record<string, { icon: string; color: string }> = {
+  'P-Card Request':     { icon: 'mdi-credit-card-outline',       color: 'warning' },
+  'Travel Request':     { icon: 'mdi-airplane',                  color: 'success' },
+  'Resource Checkout':  { icon: 'mdi-package-variant-closed',    color: 'primary' },
+}
+
+async function loadSubmissions() {
+  submissionsLoading.value = true
+  try {
+    const [pcards, travels, resources] = await Promise.all([
+      feathersClient.service('p-card-requests').find({ query: { club: clubStore.id, : { created_at: -1 } } }),
+      feathersClient.service('travel-requests').find({ query: { club: clubStore.id, : { created_at: -1 } } }),
+      feathersClient.service('resource-checkouts').find({ query: { club: clubStore.id, : { created_at: -1 } } }),
+    ])
+    const map = (arr: any[], type: string) => arr.map((r: any) => ({
+      id: r.id ?? r._id,
+      formName: type === 'P-Card Request' ? 'ASUN/CSE Credit Card Request'
+               : type === 'Travel Request' ? 'ASUN/CSE Travel Request'
+               : 'ASUN Club Resource Checkout',
+      formType: type,
+      status: r.status ?? 'Submitted',
+      statusColor: r.status === 'Approved' ? 'success' : r.status === 'Rejected' ? 'error' : r.status === 'Returned' ? 'grey' : 'warning',
+      progress: r.status === 'Approved' || r.status === 'Returned' ? 100 : 60,
+      icon: formTypeMap[type].icon,
+      submittedDate: r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
+      lastUpdated: r.updated_at ? new Date(r.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
+      comments: r.comments ?? [],
+    }))
+    submissions.value = [
+      ...map(pcards.data ?? [], 'P-Card Request'),
+      ...map(travels.data ?? [], 'Travel Request'),
+      ...map(resources.data ?? [], 'Resource Checkout'),
+    ]
+  } catch (e) {
+    console.error('Failed to load submissions:', e)
+  } finally {
+    submissionsLoading.value = false
+  }
+}
+
+async function postComment() {
+  if (!newComment.value.trim() || !selectedSubmission.value) return
+  const comment = {
+    id: Date.now(),
+    author: userStore.firstName + ' ' + userStore.lastName,
+    isAdmin: false,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    text: newComment.value.trim(),
+  }
+  try {
+    await feathersClient.service('submission-comments').create({
+      submission_id: selectedSubmission.value.id,
+      form_type: selectedSubmission.value.formType,
+      author: comment.author,
+      text: comment.text,
+    })
+  } catch (e) {
+    console.error('Failed to save comment:', e)
+  }
+  selectedSubmission.value.comments.push(comment)
+  newComment.value = ''
+}
 
 function cellPropHandler({ item, column }: any) {
   if (item.memberRole === 'president' && column.title === 'Role') return { class: 'bg-error rounded px-2 py-1' }
@@ -545,6 +618,16 @@ const roleColors: Record<string, string> = {
                 <v-btn class="mt-4" color="primary" variant="tonal" rounded="lg" prepend-icon="mdi-arrow-right" @click="selected = 'travelreq'">Open Form</v-btn>
               </v-card>
             </v-col>
+            <v-col cols="12" sm="6">
+              <v-card rounded="lg" elevation="2" class="pa-6 cursor-pointer" hover @click="selected = 'resourcecheckout'">
+                <v-avatar color="primary" variant="tonal" size="52" class="mb-4">
+                  <v-icon size="28" color="primary">mdi-package-variant-closed</v-icon>
+                </v-avatar>
+                <h3 class="text-h6 font-weight-bold mb-1">Resource Checkout</h3>
+                <p class="text-medium-emphasis text-body-2">Request ASUN club resources for your event.</p>
+                <v-btn class="mt-4" color="primary" variant="tonal" rounded="lg" prepend-icon="mdi-arrow-right" @click="selected = 'resourcecheckout'">Open Form</v-btn>
+              </v-card>
+            </v-col>
           </v-row>
         </div>
 
@@ -556,6 +639,166 @@ const roleColors: Record<string, string> = {
         <div v-if="selected === 'travelreq'">
           <v-btn variant="text" prepend-icon="mdi-arrow-left" class="mb-4 pl-0" @click="selected = 'forms'">Back to Forms</v-btn>
           <travel-request />
+        </div>
+
+        <!-- ─── Resource Checkout ─── -->
+        <div v-if="selected === 'resourcecheckout'">
+          <v-btn variant="text" prepend-icon="mdi-arrow-left" class="mb-4 pl-0" @click="selected = 'forms'">Back to Forms</v-btn>
+          <resource-checkout />
+        </div>
+
+        <!-- ─── Form Submissions ─── -->
+        <div v-if="selected === 'submissions'">
+          <div class="d-flex align-center justify-space-between mb-6">
+            <div>
+              <h1 class="text-h4 font-weight-bold">Form Submissions</h1>
+              <p class="text-medium-emphasis mt-1">Track the status of all submitted forms.</p>
+            </div>
+          </div>
+
+          <v-row>
+            <!-- Submissions List -->
+            <v-col cols="12" md="7">
+              <v-card elevation="2" rounded="lg">
+                <v-card-title class="px-6 pt-5 pb-2 text-h6">Submissions</v-card-title>
+                <v-card-text class="pa-0">
+                  <div v-if="submissionsLoading" class="pa-6">
+                    <v-skeleton-loader v-for="i in 3" :key="i" type="list-item-two-line" class="mb-2" />
+                  </div>
+                  <div v-else-if="submissions.length === 0" class="text-center py-10">
+                    <v-icon size="48" color="grey-lighten-1">mdi-file-document-outline</v-icon>
+                    <p class="text-medium-emphasis mt-3">No submissions yet.</p>
+                  </div>
+                  <v-list v-else lines="two" nav class="pa-2">
+                    <v-list-item
+                      v-for="sub in submissions"
+                      :key="sub.id"
+                      :active="selectedSubmission?.id === sub.id"
+                      active-color="primary"
+                      rounded="lg"
+                      class="mb-1"
+                      @click="selectedSubmission = sub"
+                    >
+                      <template #prepend>
+                        <v-avatar :color="sub.statusColor" variant="tonal" size="40">
+                          <v-icon :icon="sub.icon" size="20" :color="sub.statusColor" />
+                        </v-avatar>
+                      </template>
+                      <v-list-item-title class="font-weight-medium">{{ sub.formName }}</v-list-item-title>
+                      <v-list-item-subtitle>
+                        <v-chip size="x-small" :color="sub.statusColor" variant="tonal" class="mr-2">{{ sub.status }}</v-chip>
+                        <span class="text-caption">{{ sub.submittedDate }}</span>
+                      </v-list-item-subtitle>
+                      <template #append>
+                        <v-icon size="16" color="grey">mdi-chevron-right</v-icon>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+                </v-card-text>
+              </v-card>
+            </v-col>
+
+            <!-- Submission Detail + Comments -->
+            <v-col cols="12" md="5">
+              <div v-if="!selectedSubmission" class="text-center py-16">
+                <v-icon size="48" color="grey-lighten-1">mdi-cursor-pointer</v-icon>
+                <p class="text-medium-emphasis mt-3">Select a submission to view details.</p>
+              </div>
+
+              <template v-else>
+                <!-- Detail Card -->
+                <v-card elevation="2" rounded="lg" class="mb-4">
+                  <v-card-text class="pa-5">
+                    <div class="d-flex align-center justify-space-between mb-4">
+                      <h3 class="text-h6 font-weight-bold">{{ selectedSubmission.formName }}</h3>
+                      <v-chip :color="selectedSubmission.statusColor" variant="tonal" size="small">{{ selectedSubmission.status }}</v-chip>
+                    </div>
+
+                    <p class="text-overline text-primary mb-2">Progress</p>
+                    <v-progress-linear
+                      :model-value="selectedSubmission.progress"
+                      :color="selectedSubmission.statusColor"
+                      rounded height="8" class="mb-1"
+                    />
+                    <p class="text-caption text-medium-emphasis mb-4">{{ selectedSubmission.progress }}% complete</p>
+
+                    <v-divider class="mb-3" />
+                    <p class="text-overline text-primary mb-2">Details</p>
+                    <div class="d-flex align-center ga-2 mb-2">
+                      <v-icon size="16" color="grey">mdi-calendar</v-icon>
+                      <span class="text-body-2">Submitted: {{ selectedSubmission.submittedDate }}</span>
+                    </div>
+                    <div class="d-flex align-center ga-2 mb-2">
+                      <v-icon size="16" color="grey">mdi-update</v-icon>
+                      <span class="text-body-2">Last updated: {{ selectedSubmission.lastUpdated }}</span>
+                    </div>
+                    <div class="d-flex align-center ga-2">
+                      <v-icon size="16" color="grey">mdi-file-outline</v-icon>
+                      <span class="text-body-2">Form type: {{ selectedSubmission.formType }}</span>
+                    </div>
+                  </v-card-text>
+                </v-card>
+
+                <!-- Comments Card -->
+                <v-card elevation="2" rounded="lg">
+                  <v-card-title class="px-5 pt-4 pb-2 text-body-1 font-weight-bold">
+                    <v-icon start color="primary" size="18">mdi-comment-multiple-outline</v-icon>
+                    Discussion
+                  </v-card-title>
+                  <v-card-text class="pa-4">
+                    <!-- Existing comments -->
+                    <div v-if="selectedSubmission.comments.length === 0" class="text-center py-4">
+                      <p class="text-caption text-medium-emphasis">No comments yet. Be the first to leave one.</p>
+                    </div>
+                    <div v-else class="mb-4">
+                      <div
+                        v-for="comment in selectedSubmission.comments"
+                        :key="comment.id"
+                        class="d-flex ga-3 mb-4"
+                      >
+                        <v-avatar :color="comment.isAdmin ? 'warning' : 'primary'" size="32" variant="tonal">
+                          <span class="text-caption font-weight-bold">{{ comment.author[0] }}</span>
+                        </v-avatar>
+                        <div class="flex-grow-1">
+                          <div class="d-flex align-center ga-2 mb-1">
+                            <span class="text-body-2 font-weight-bold">{{ comment.author }}</span>
+                            <v-chip v-if="comment.isAdmin" size="x-small" color="warning" variant="tonal">Staff</v-chip>
+                            <span class="text-caption text-medium-emphasis">{{ comment.date }}</span>
+                          </div>
+                          <v-card variant="tonal" :color="comment.isAdmin ? 'warning' : 'primary'" rounded="lg" class="pa-3">
+                            <p class="text-body-2 ma-0">{{ comment.text }}</p>
+                          </v-card>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- New comment input -->
+                    <v-divider class="mb-3" />
+                    <div class="d-flex ga-2 align-start">
+                      <v-avatar color="primary" size="32" variant="tonal">
+                        <span class="text-caption font-weight-bold">D</span>
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <v-textarea
+                          v-model="newComment"
+                          placeholder="Write a message..."
+                          variant="outlined"
+                          density="compact"
+                          rows="2"
+                          hide-details
+                          class="mb-2"
+                        />
+                        <div class="d-flex justify-end ga-2">
+                          <v-btn size="small" variant="text" color="grey" @click="newComment = ''">Cancel</v-btn>
+                          <v-btn size="small" color="primary" rounded="lg" :disabled="!newComment.trim()" @click="postComment">Post</v-btn>
+                        </div>
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </template>
+            </v-col>
+          </v-row>
         </div>
 
         <!-- ─── Settings ─── -->

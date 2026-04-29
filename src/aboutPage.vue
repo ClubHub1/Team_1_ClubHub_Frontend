@@ -35,8 +35,8 @@ const team = [
       <v-container max-width="1000" class="py-12">
 
         <v-card elevation="2" rounded="lg" class="pa-8 mb-10">
-          <div class="d-flex align-center mb-4">
-            <v-icon color="primary" size="28" class="mr-3">mdi-information-outline</v-icon>
+          <div class="text-center mb-4">
+            <v-icon color="primary" size="28" class="mb-2">mdi-information-outline</v-icon>
             <h2 class="text-h5 font-weight-bold">About ClubHub</h2>
           </div>
           <v-divider class="mb-5" />
@@ -50,32 +50,35 @@ const team = [
         </v-card>
 
         <!-- Team Section -->
-        <div class="mb-6">
-          <h2 class="text-h5 font-weight-bold mb-1">About Team 1</h2>
-          <p class="text-medium-emphasis">The developers behind ClubHub</p>
-        </div>
-
-        <v-row>
-          <v-col
-            v-for="member in team"
-            :key="member.name"
-            cols="12" sm="6" md="4"
-          >
-            <v-card rounded="lg" elevation="2" class="pa-5 text-center">
-              <v-avatar color="primary" variant="tonal" size="56" class="mb-4">
-                <v-icon :icon="member.icon" size="28" color="primary" />
-              </v-avatar>
-              <h3 class="text-body-1 font-weight-bold mb-1">{{ member.name }}</h3>
-              <v-chip size="small" color="primary" variant="tonal" class="mb-2">{{ member.role }}</v-chip>
-              <p class="text-caption text-medium-emphasis mt-2">{{ member.detail }}</p>
-            </v-card>
-          </v-col>
-        </v-row>
+        <v-card elevation="2" rounded="lg" class="pa-8 mb-6">
+          <div class="text-center mb-4">
+            <v-icon color="primary" size="28" class="mb-2">mdi-account-group</v-icon>
+            <h2 class="text-h5 font-weight-bold mb-1">About Team 1</h2>
+            <p class="text-medium-emphasis">The developers behind ClubHub</p>
+          </div>
+          <v-divider class="mb-6" />
+          <v-row>
+            <v-col
+              v-for="member in team"
+              :key="member.name"
+              cols="12" sm="6" md="4"
+            >
+              <v-card rounded="lg" elevation="1" class="pa-5 text-center" variant="outlined">
+                <v-avatar color="primary" variant="tonal" size="56" class="mb-4">
+                  <v-icon :icon="member.icon" size="28" color="primary" />
+                </v-avatar>
+                <h3 class="text-body-1 font-weight-bold mb-1">{{ member.name }}</h3>
+                <v-chip size="small" color="primary" variant="tonal" class="mb-2">{{ member.role }}</v-chip>
+                <p class="text-caption text-medium-emphasis mt-2">{{ member.detail }}</p>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-card>
 
         <!-- Resources -->
         <v-card elevation="2" rounded="lg" class="pa-8 mt-10">
-          <div class="d-flex align-center mb-4">
-            <v-icon color="primary" size="28" class="mr-3">mdi-book-open-outline</v-icon>
+          <div class="text-center mb-4">
+            <v-icon color="primary" size="28" class="mb-2">mdi-book-open-outline</v-icon>
             <h2 class="text-h5 font-weight-bold">Resources</h2>
           </div>
           <v-divider class="mb-5" />
