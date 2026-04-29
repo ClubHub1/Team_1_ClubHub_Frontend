@@ -35,7 +35,7 @@ const currentDate = new Date()
           <v-avatar color="primary" variant="tonal" size="40">
             <v-icon color="primary">mdi-account-group</v-icon>
           </v-avatar>
-          <div class="flex-grow-1">
+          <div class="flex-grow-1 ml-2">
             <p class="font-weight-medium ma-0">Your Organizations</p>
             <p class="text-caption text-medium-emphasis ma-0">Access and manage your clubs</p>
           </div>

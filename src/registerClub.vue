@@ -233,6 +233,27 @@ Method to auto-refresh form validity rules
                   required
                 />
 
+                <v-row class="mb-5">
+                    <v-file-input
+                      v-model="logo_file"
+                      @change="handleFileSelect"
+                      accept="image/*"
+                      label="Club Logo (Optional)"
+                      prepend-icon="mdi-image"
+                      class="mr-6"
+                      :rules="logoRules"
+                    ></v-file-input>
+                </v-row>
+
+                  <v-row v-if="logo_preview" class="mb-5 justify-center">
+                    <v-img
+                      :src="logo_preview"
+                      alt="Logo Preview"
+                      max-width="150"
+                      max-height="150"
+                    ></v-img>
+                  </v-row>
+
                 <v-btn
                   type="submit"
                   color="primary"

@@ -282,9 +282,9 @@ async function loadSubmissions() {
   submissionsLoading.value = true
   try {
     const [pcards, travels, resources] = await Promise.all([
-      feathersClient.service('p-card-requests').find({ query: { club: clubStore.id, : { created_at: -1 } } }),
-      feathersClient.service('travel-requests').find({ query: { club: clubStore.id, : { created_at: -1 } } }),
-      feathersClient.service('resource-checkouts').find({ query: { club: clubStore.id, : { created_at: -1 } } }),
+      feathersClient.service('p-card-requests').find({ query: { club: clubStore.id, $sort : { created_at: -1 } } }),
+      feathersClient.service('travel-requests').find({ query: { club: clubStore.id, $sort : { created_at: -1 } } }),
+      feathersClient.service('resource-checkouts').find({ query: { club: clubStore.id, $sort: { created_at: -1 } } }),
     ])
     const map = (arr: any[], type: string) => arr.map((r: any) => ({
       id: r.id ?? r._id,

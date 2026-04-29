@@ -1,57 +1,4 @@
-<template>
-    <v-container>
-        <v-toolbar flat height="100" color="primary" dark>
-            <v-toolbar-title class="mr-5 flex text-center text-h2 font-weight-bold">Your Clubs</v-toolbar-title>
-        </v-toolbar>
 
-        <v-row justify="center" class="mt-4" dense>
-            <v-col cols="12" v-if="loading">
-                <v-progress-circular indeterminate color="primary"></v-progress-circular>
-            </v-col>
-
-            <v-col cols="12" v-else-if="error">
-                <v-alert type="error" dense outlined>{{ error }}</v-alert>
-            </v-col>
-
-            <v-col cols="12" v-else-if="clubs.length === 0">
-                <v-card outlined>
-                    <v-card-text>No clubs found.</v-card-text>
-                </v-card>
-            </v-col>
-
-            <v-container fluid>
-                <v-row class="mb-6 d-flex justify-center">
-                    <v-col v-for="(club, index) in clubs" :key="index" outlined
-                        cols="12" sm="6" md="3"
-                        class="d-flex justify-center">
-                        <v-card width="400">
-                            <v-card-title class="font-weight-bold text-center headline">{{ club.name }}</v-card-title>
-                            <v-card-text class="text--secondary text-center">
-                                {{ club.description || "No description provided." }}
-                            </v-card-text>
-                            <v-img v-if="club.logo_url" class="mx-auto" rounded="lg"
-                                :width="200"
-                                :src="`http://localhost:42063${club.logo_url}`"
-                            ></v-img>
-                            <v-icon v-else 
-                                class="mb-15 mx-auto"
-                                icon="mdi-image-off-outline"
-                                size="x-large"
-                            ></v-icon>
-                            <v-card-actions class="justify-center">
-                                <v-spacer></v-spacer>
-                                <v-btn color="primary" @click="goToManage(index)">Manage</v-btn>
-                            </v-card-actions>
-                        </v-card>
-                    </v-col>
-                </v-row>
-            </v-container>
-        </v-row>
-        <v-row justify="center" class="mt-10">
-            <v-btn color="primary" to='/registerClub'>Register A New Club Here!</v-btn>
-        </v-row>
-    </v-container>
-</template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -134,7 +81,7 @@ onMounted(fetchClubs)
         :key="index"
         cols="12" sm="6" md="4"
       >
-        <v-card rounded="lg" elevation="2" class="d-flex flex-column" style="height: 200px;">
+        <v-card rounded="lg" elevation="2" class="d-flex flex-column" style="height: 350px;">
           <v-card-text class="flex-grow-1 pa-5">
             <div class="d-flex align-start mb-3">
               <v-avatar color="primary" variant="tonal" size="40" class="mr-3 mt-1">
@@ -151,6 +98,16 @@ onMounted(fetchClubs)
               {{ club.description || 'No description provided.' }}
             </p>
           </v-card-text>
+          <v-img v-if="club.logo_url" class="mx-auto mb-5" rounded="lg"
+            :width="200"
+            :max-height="300"
+            :src="`http://localhost:42063${club.logo_url}`"
+            ></v-img>
+            <v-icon v-else 
+                class="mb-15 mx-auto"
+                icon="mdi-image-off-outline"
+                size="x-large"
+            ></v-icon>
           <v-card-actions class="pa-4 pt-0">
             <v-spacer />
             <v-btn color="primary" variant="flat" rounded="lg" size="small" prepend-icon="mdi-cog" @click="goToManage(index)">

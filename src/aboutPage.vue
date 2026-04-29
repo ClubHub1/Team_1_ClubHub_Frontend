@@ -91,7 +91,8 @@ SETUP SCRIPT FOR IMPORTS, FUNCTION DECLARATION, GLOBAL VARIABLES, ETC
             <h2 class="text-h5 font-weight-bold mb-1">About Team 1</h2>
             <p class="text-medium-emphasis">The developers behind ClubHub</p>
           </div>
-          <v-divider class="mb-6" />
+        </v-card>
+        <v-divider class="mb-6" />
           <v-row>
             <v-col
               v-for="member in team"
@@ -103,56 +104,14 @@ SETUP SCRIPT FOR IMPORTS, FUNCTION DECLARATION, GLOBAL VARIABLES, ETC
                     <h2>CS 456 - Team 1 - Spring 2026</h2>
                   </div>
               </v-card-title>
-            </v-card>
           </v-col>
         </v-row>
       </v-container>
       <!-- END TITLE/HEADER STRUCTURE -->
         
       <!-- BASIC STRUCTURE FOR A NEW SECTION WITH THE SAME FORMATTING STARTS HERE -->
-      <v-container fluid>
-        <v-row class = "d-flex justify-center">
-          
-            <v-card class=" mt-15 mb-10 bg-white" flat color="transparent" height="300" width="1200">
-              <v-card-title class=" d-flex justify-center rounded-xl bg-primary">
-                <span class="font-weight-bold text-h4">
-                  <h1>About ClubHub</h1>
-                </span>
-              </v-card-title>
-              <v-card-text class="bg-surface mt-10 text-center">
-                <P>
-        Our webpage ClubHub will be a tool that can help and assist club officers on 
-      campus with organizational duties and management by addressing the lack of 
-      an effective, centralized webpage for officers and leaders of on campus clubs 
-      and organizations, aiming to provide success through efficient leadership. 
-      We intend to satisfy these needs by designing an accessible UI and frontend, 
-      streamlined functions and information storage for essential club information 
-      such as finances, supplemental forms, contacts, and events, and the continued 
-      improvement of a backend API to allow for seamless communication between the 
-      database and frontend. This document will go more over about the project, its 
-      significance, changes, and impacts, along with how responsibilities and 
-      risks are monitored and managed throughout the team. 
-                </P>
-              </v-card-text>
-            </v-card>
-         
-        </v-row>
-      </v-container>
+     
       <!-- AND ENDS HERE; TO MAKE A NEW SECTION, COPY AND PASTE ABOVE/BELOW -->
-
-      <v-container fluid>
-        <v-row class = "d-flex justify-center">
-          
-            <v-card class=" mt-15 bg-white" flat color="transparent" width="700">
-              <v-card-title class="d-flex justify-center text-center rounded-xl bg-primary">
-                <span>
-                  <h1>Meet the Team</h1>
-                </span>
-              </v-card-title>
-            </v-card>
-         
-        </v-row>
-      </v-container>
 
       <v-container fluid>
         <v-row class="mb-6 d-flex justify-center">
