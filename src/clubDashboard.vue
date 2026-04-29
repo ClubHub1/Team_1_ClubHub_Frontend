@@ -10,8 +10,9 @@
     import financesPage from './financesPage.vue'
     import pCardRequest from './pCardRequest.vue'
     import travelRequest from './travelRequest.vue'
-import TravelRequest from './travelRequest.vue'
-import attendancePage from './attendancePage.vue'
+    import TravelRequest from './travelRequest.vue'
+    import attendancePage from './attendancePage.vue'
+    import LogoUpload from './components/LogoUpload.vue'
 
     const auth = useAuthStore()
     const clubStore = useClubStore()
@@ -28,7 +29,10 @@ import attendancePage from './attendancePage.vue'
 
     const memberList = []
 
+    const logoUrl = `http://localhost:42063${clubStore.logo_url}`
+
     async function setPermissions(){
+        console.log(logoUrl);
         const res = await(feathersClient.service("ClubMembership").find({
             query:{
                 $select:['role', 'id'],
@@ -397,7 +401,6 @@ import attendancePage from './attendancePage.vue'
 
         <v-main>
             <v-container class="pa-6">
-
                 <div v-if="selected === 'dashboard'">
                     <v-row justify="center">
                         <h1 class="mt-8">Welcome to your club's management page!</h1>
@@ -473,7 +476,7 @@ import attendancePage from './attendancePage.vue'
                                     <v-list-item @click="role = 'vice_pres'" :active="role==='vice_pres'">vice_pres</v-list-item>
                                     <v-list-item @click="role = 'treasurer'" :active="role==='treasurer'">treasurer</v-list-item>
                                     <v-list-item @click="role = 'secretary'" :active="role==='secretary'">secretary</v-list-item>
-                                    <v-list-item @click="role = 'Member'" :active="role==='Member'">Member</v-list-item>
+                                    <v-list-item @click="role = 'member'" :active="role==='member'">Member</v-list-item>
                                 </v-list>
                             </v-menu>
                         </v-row>
@@ -742,4 +745,13 @@ import attendancePage from './attendancePage.vue'
 
 <style scoped>
 .mt-6 { margin-top: 24px; }
+</style>
+
+<style scoped>
+.club-logo {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 8px;
+} 
 </style>

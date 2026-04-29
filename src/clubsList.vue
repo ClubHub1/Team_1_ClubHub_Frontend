@@ -19,18 +19,33 @@
                 </v-card>
             </v-col>
 
-            <v-col cols="12" sm="6" md="4" v-for="(club, index) in clubs" :key="index">
-                <v-card outlined height="180">
-                    <v-card-title class="font-weight-bold text-center headline">{{ club.name }}</v-card-title>
-                    <v-card-text class="text--secondary">
-                        {{ club.description || "No description provided." }}, {{ index }}
-                    </v-card-text>
-                    <v-card-actions class="justify-center">
-                        <v-spacer></v-spacer>
-                        <v-btn color="primary" @click="goToManage(index)">Manage</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-col>
+            <v-container fluid>
+                <v-row class="mb-6 d-flex justify-center">
+                    <v-col v-for="(club, index) in clubs" :key="index" outlined
+                        cols="12" sm="6" md="3"
+                        class="d-flex justify-center">
+                        <v-card width="400">
+                            <v-card-title class="font-weight-bold text-center headline">{{ club.name }}</v-card-title>
+                            <v-card-text class="text--secondary text-center">
+                                {{ club.description || "No description provided." }}
+                            </v-card-text>
+                            <v-img v-if="club.logo_url" class="mx-auto" rounded="lg"
+                                :width="200"
+                                :src="`http://localhost:42063${club.logo_url}`"
+                            ></v-img>
+                            <v-icon v-else 
+                                class="mb-15 mx-auto"
+                                icon="mdi-image-off-outline"
+                                size="x-large"
+                            ></v-icon>
+                            <v-card-actions class="justify-center">
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" @click="goToManage(index)">Manage</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-col>
+                </v-row>
+            </v-container>
         </v-row>
         <v-row justify="center" class="mt-10">
             <v-btn color="primary" to='/registerClub'>Register A New Club Here!</v-btn>
@@ -94,6 +109,7 @@ function goToManage(id) {
     clubStore.setName(clubs.value[id].name)
     clubStore.setDescription(clubs.value[id].description)
     clubStore.setId(clubs.value[id].club_id)
+    clubStore.setLogoUrl(clubs.value[id].logo_url)
     router.push(`/clubDash`)
 }
 

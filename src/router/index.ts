@@ -56,7 +56,7 @@ const routes = [
     { 
         path: '/about', 
         component: AboutPage,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: false }
     },
     {
         path: '/clubDash',
