@@ -55,6 +55,8 @@ const app = createApp(App);
 
 import { api } from './backendAPI'
 import { feathersClient } from './backendAPI'
+import { isExpression } from 'typescript'
+import path from 'path'
 
 //Plugins
 app.use(pinia);

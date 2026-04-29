@@ -4,6 +4,7 @@ export interface Club {
   id: number | null
   name: string
   description: string
+  logo_url?: string
 }
 
 export const useClubStore = defineStore('club', {
@@ -11,6 +12,7 @@ export const useClubStore = defineStore('club', {
     id: null,
     name: '',
     description: '',
+    logo_url: undefined,
   }),
   getters: {
     hasClub: (state): boolean => !!state.id,
@@ -39,10 +41,15 @@ export const useClubStore = defineStore('club', {
       this.description = value
     },
 
+    setLogoUrl(value: string | undefined) {
+      this.logo_url = value
+    },
+
     resetClub() {
       this.id = null
       this.name = ''
       this.description = ''
+      this.logo_url = undefined
     },
   },
 })

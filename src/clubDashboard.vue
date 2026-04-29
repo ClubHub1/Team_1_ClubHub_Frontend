@@ -11,6 +11,7 @@ import financesPage from './financesPage.vue'
 import pCardRequest from './pCardRequest.vue'
 import travelRequest from './travelRequest.vue'
 import attendancePage from './attendancePage.vue'
+import LogoUpload from './components/LogoUpload.vue'
 import resourceCheckout from './resourceCheckouts.vue'
 
 const auth = useAuthStore()
@@ -18,34 +19,74 @@ const clubStore = useClubStore()
 const memberStore = useMemberStore()
 const userStore = useUserStore()
 
+    const USERROLE = ''
+    const role = ref('Select Role')
+    const email = ref('')
+    const error = ref('')
 
-const role = ref('Select Role')
-const email = ref('')
-const error = ref('')
-const loading = ref(false)
-const valid = ref(false)
-const memberList: any[] = []
+    const loading = ref(false)
+    const valid = ref(false)
 
-async function setPermissions() {
-  const res = await feathersClient.service('ClubMembership').find({
-    query: { $select: ['role', 'id'], userid: userStore.id, clubid: clubStore.id }
-  }).catch(err => console.log('SERVER THREW ERROR RETRIEVING MEMBERSHIP ENTRY: ', err))
+    const memberList: any[] = []
 
-  if (res) {
-    memberStore.setRole(res.data[0].role)
-    memberStore.setId(res.data[0].id)
-  }
+    const logoUrl = `http://localhost:42063${clubStore.logo_url}`
 
-  const memberRes = await feathersClient.service('ClubMembership').find({
-    query: { clubid: clubStore.id, $sort: { userid: -1 } }
-  }).catch((err: any) => { error.value = err })
+    async function setPermissions(){
+        console.log(logoUrl);
+        const res = await(feathersClient.service("ClubMembership").find({
+            query:{
+                $select:['role', 'id'],
+                userid: userStore.id,
+                clubid: clubStore.id
+            }
+        })).catch(err =>{
+            console.log('SERVER THREW ERROR RETRIEVING MEMBERSHIP ENTRY: ', err)
+        })
 
-  if (memberRes) {
-    const memberArray = memberRes.data
-    const userIds = memberArray.map((m: any) => m.userid)
-    const usersRes = await feathersClient.service('User').find({
-      query: { $sort: { id: -1 }, id: { $in: userIds } }
-    }).catch((err: any) => { error.value = err })
+        if(res){
+            const memberInfo = res.data
+            console.log('CURRENT MEMBERINFO: ', memberInfo[0].role, ' ', memberInfo[0].id)
+
+            memberStore.setRole(memberInfo[0].role)
+            memberStore.setId(memberInfo[0].id)
+        }
+        
+        const memberRes = await(feathersClient.service("ClubMembership").find({
+            query: {
+                clubid: clubStore.id,
+                $sort: {
+                    userid: -1
+                }
+            }
+        })).catch(err =>{
+            error.value = err
+            console.log(error)
+        })
+
+        const userIds = []
+
+        if(memberRes){
+            console.log(memberRes)
+            const memberArray = memberRes.data
+            for(const member of memberArray){
+                userIds.push(member.userid)
+            }
+
+            console.log('USER IDS: ', userIds)
+
+            const usersRes = await(feathersClient.service("User").find({
+                query:{
+                    $sort: {
+                        id: -1
+                    },
+                    id: {
+                        $in: userIds
+                    }
+                }
+            })).catch(err=>{
+                error.value = err
+                console.log(error)
+            })
 
     if (usersRes) {
       const userData = usersRes.data
@@ -819,4 +860,13 @@ const roleColors: Record<string, string> = {
 
 <style scoped>
 .cursor-pointer { cursor: pointer; }
+</style>
+
+<style scoped>
+.club-logo {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 8px;
+} 
 </style>
