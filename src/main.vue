@@ -4,6 +4,10 @@
     import { computed } from 'vue'
     import { useRoute, useRouter } from 'vue-router'
     import { useAuthStore } from './stores/auth';
+import { user } from 'CHBackend/lib/services/User/User';
+    import useUserStore from './stores/user';
+
+    const userStore = useUserStore()
 
     const authStore = useAuthStore()
     const router = useRouter()
@@ -24,6 +28,7 @@
 
     async function logoutUser() {
         await authStore.logout()
+        userStore.resetUser()
         router.push('/')
     }
     
@@ -48,7 +53,7 @@
             <template v-slot:prepend>
                 <v-icon @click="iconClicked" icon="$chLogo" size=65 to="/"/>
                 <v-img 
-                    class="mt-3" 
+                    class="mt-3 hidden-sm-and-down" 
                     src=src/assets/clubhubText.png
                     cover 
                     :width="200" 
