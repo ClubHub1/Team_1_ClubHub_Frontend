@@ -10,6 +10,11 @@ import useUserStore from './stores/user'
 const userStore = useUserStore()
 const name = userStore.firstName
 const currentDate = new Date()
+
+const profilePhotoSrc = userStore.profile_photo_url
+  ? `http://localhost:42063${userStore.profile_photo_url}`
+  : ''
+const userInitials = `${userStore.firstName?.[0] ?? ''}${userStore.lastName?.[0] ?? ''}`.toUpperCase()
 </script>
 
 <template>
@@ -18,11 +23,22 @@ const currentDate = new Date()
 
       <!-- Page Header -->
       <div class="d-flex align-center justify-space-between mb-2">
-        <div>
+        <div class="d-flex flex-column align-start">
+          <v-avatar :color="profilePhotoSrc ? 'transparent' : 'primary'" size="72" class="mb-4">
+            <img
+              v-if="profilePhotoSrc"
+              :src="profilePhotoSrc"
+              alt="Profile photo"
+              class="dashboard-profile-image"
+            />
+            <span v-else class="text-h5 text-white font-weight-bold">
+              {{ userInitials }}
+            </span>
+          </v-avatar>
           <h1 class="text-h4 font-weight-bold">Hey there, {{ name }}!</h1>
           <p class="text-medium-emphasis mt-1">Here's what's happening with your clubs today.</p>
         </div>
-        <v-chip color="primary" variant="tonal" size="large" rounded="lg" class="px-5 font-weight-medium">
+        <v-chip color="primary" variant="tonal" size="medium" rounded="lg" class="px-5 font-weight-medium">
           {{ currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }) }}
         </v-chip>
       </div>
@@ -67,3 +83,12 @@ const currentDate = new Date()
     </v-container>
   </v-main>
 </template>
+
+<style scoped>
+.dashboard-profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+</style>

@@ -2,7 +2,8 @@ import { feathersClient } from '@/backendAPI'
 
 export interface Task {
   id: number
-  club: number
+  club: number | string
+  clubName?: string
   title: string
   description: string
   due_date: string
@@ -13,12 +14,24 @@ export interface Task {
   daysUntilDue: number
 }
 
-export async function getTasks(): Promise<Task[]> {
-  const response = await feathersClient.service('Task').find()
-  return response.data.map((task: any) => ({
-    ...task,
-    daysUntilDue: calculateDaysUntilDue(task.due_date)
-  }))
+export async function getTasks(clubIds?: Array<number | string>): Promise<Task[]> {
+  if (clubIds && clubIds.length === 0) return []
+
+  const allowedClubIds = clubIds ? new Set(clubIds.map((id) => String(id))) : null
+  const clubQueryIds = clubIds
+    ? [...new Set(clubIds.flatMap((id) => [id, String(id)]))]
+    : undefined
+
+  const response = await feathersClient.service('Task').find({
+    query: clubQueryIds ? { club: { $in: clubQueryIds } } : {},
+  })
+
+  return response.data
+    .filter((task: any) => !allowedClubIds || allowedClubIds.has(String(task.club)))
+    .map((task: any) => ({
+      ...task,
+      daysUntilDue: calculateDaysUntilDue(task.due_date),
+    }))
 }
 
 function calculateDaysUntilDue(dueDate: string): number | string {

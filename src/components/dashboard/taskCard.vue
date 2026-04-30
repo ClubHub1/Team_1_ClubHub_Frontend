@@ -6,6 +6,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['open-task'])
+
 const badgeColor = (() => {
   const d = props.task.daysUntilDue
   if (d === 'overdue') return 'error'
@@ -34,6 +36,7 @@ const dueLabel = (() => {
 
       <div class="d-flex flex-column ga-2">
         <span class="text-body-2 font-weight-bold font-italic">{{ task.title }}</span>
+        <span v-if="task.clubName" class="text-caption text-medium-emphasis">{{ task.clubName }}</span>
         <v-chip
           :color="badgeColor"
           size="small"
@@ -51,6 +54,7 @@ const dueLabel = (() => {
         size="small"
         color="grey-darken-3"
         aria-label="View task"
+        @click="emit('open-task', task)"
       />
 
     </v-card-text>

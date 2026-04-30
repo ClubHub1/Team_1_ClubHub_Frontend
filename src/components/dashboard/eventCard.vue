@@ -29,6 +29,11 @@ function formatDatetime(iso) {
       </span>
 
       <div class="d-flex align-center ga-1 text-body-2 text-medium-emphasis">
+        <v-icon icon="mdi-account-group-outline" size="14" />
+        {{ clubEvent.clubName || 'Unknown Club' }}
+      </div>
+
+      <div class="d-flex align-center ga-1 text-body-2 text-medium-emphasis">
         <v-icon icon="mdi-clock-outline" size="14" />
         {{ formatDatetime(clubEvent.start_datetime) }}
       </div>
@@ -37,16 +42,6 @@ function formatDatetime(iso) {
         <v-icon icon="mdi-map-marker-outline" size="14" />
         {{ clubEvent.location || '—' }}
       </div>
-
-      <v-btn
-        variant="flat"
-        color="grey-darken-3"
-        size="small"
-        rounded="sm"
-        class="align-self-start"
-      >
-        Edit
-      </v-btn>
 
     </v-card-text>
   </v-card>

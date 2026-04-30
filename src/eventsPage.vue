@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { feathersClient } from '@/backendAPI'
 
 interface Club { club_id: number; name: string; tags: string[] }
@@ -10,6 +11,7 @@ interface Event {
 }
 
 const loading = ref(false)
+const route = useRoute()
 const error = ref('')
 const searchQuery = ref('')
 const selectedTags = ref<string[]>([])
@@ -46,17 +48,23 @@ async function fetchEvents() {
     const clubMap = new Map<number, Club>(clubs.value.map((c: Club) => [c.club_id, c]))
 
     const eventQuery: Record<string, any> = { $sort: { start_datetime: 1 }, $limit: 500 }
+    const routeClubId = typeof route.query.club === 'string' ? Number(route.query.club) : null
+    const hasRouteClubFilter = routeClubId !== null && !Number.isNaN(routeClubId)
+
     if (dateFrom.value) eventQuery.start_datetime = { ...eventQuery.start_datetime, $gte: new Date(dateFrom.value).toISOString() }
     if (dateTo.value) eventQuery.start_datetime = { ...eventQuery.start_datetime, $lte: new Date(dateTo.value + 'T23:59:59').toISOString() }
     if (selectedTags.value.length > 0) {
-      const matchingClubIds = clubs.value.filter((c: Club) => c.tags?.some((t: string) => selectedTags.value.includes(t))).map((c: Club) => c.club_id)
+      let matchingClubIds = clubs.value.filter((c: Club) => c.tags?.some((t: string) => selectedTags.value.includes(t))).map((c: Club) => c.club_id)
+      if (hasRouteClubFilter) matchingClubIds = matchingClubIds.filter(id => id === routeClubId)
       if (!matchingClubIds.length) { events.value = []; return }
       eventQuery.club = { $in: matchingClubIds }
+    } else if (hasRouteClubFilter) {
+      eventQuery.club = routeClubId
     }
 
     const eventRes = await (feathersClient.service('Event') as any).find({ query: eventQuery })
     events.value = (eventRes.data as any[]).map((e: any): Event => {
-      const club = clubMap.get(e.club as number)
+      const club = clubMap.get(Number(e.club))
       return { id: e.id, club: e.club, name: e.name, description: e.description, location: e.location, start_datetime: e.start_datetime, end_datetime: e.end_datetime, clubName: club?.name ?? 'Unknown Club', clubTags: club?.tags ?? [] }
     })
   } catch (err: any) {
