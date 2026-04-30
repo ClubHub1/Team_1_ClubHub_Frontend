@@ -1,5 +1,5 @@
 // src/feathers.ts
-import { createClient } from 'CHBackend'
+import { createClient } from "CHBackend"
 import socketio from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
 import { pinia } from './modules/pinia'

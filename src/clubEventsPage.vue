@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { feathersClient } from '@/backendAPI'
 import useClubStore from '@/stores/clubStore'
 
 const clubStore = useClubStore()
+const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const success = ref(false)
+const eventCreationDialog = ref(false)
 const valid = ref(false)
 const formRef = ref()
 
@@ -42,18 +45,30 @@ async function saveEvent() {
     success.value = true
     Object.assign(eventForm, { title: '', datetime: '', location: '', description: '' })
     formRef.value.reset()
+    eventCreationDialog.value = true
   } catch (err: any) {
     error.value = err.message ?? 'Something went wrong. Please try again.'
   } finally {
     loading.value = false
   }
 }
+
+function keepCreatingEvents() {
+  eventCreationDialog.value = false
+  success.value = false
+}
+
+function goToEventList() {
+  eventCreationDialog.value = false
+  success.value = false
+  router.push({ path: '/events', query: { club: String(clubStore.id) } })
+}
 </script>
 
 <template>
   <v-card elevation="2" rounded="lg">
     <v-card-text class="pa-6">
-      <v-alert v-if="success" type="success" variant="tonal" rounded="lg" class="mb-5" closable @click:close="success = false">
+      <v-alert v-if="success && !eventCreationDialog" type="success" variant="tonal" rounded="lg" class="mb-5" closable @click:close="success = false">
         <v-icon start>mdi-check-circle</v-icon> Event created successfully!
       </v-alert>
       <v-alert v-if="error" type="error" variant="tonal" rounded="lg" class="mb-5">{{ error }}</v-alert>
@@ -112,5 +127,28 @@ async function saveEvent() {
         </div>
       </v-form>
     </v-card-text>
+
+    <v-dialog v-model="eventCreationDialog" max-width="440" persistent>
+      <v-card rounded="lg">
+        <v-card-title class="d-flex align-center ga-3">
+          <v-avatar color="success" variant="tonal" size="36">
+            <v-icon color="success">mdi-check</v-icon>
+          </v-avatar>
+          <span class="text-h6">Event created</span>
+        </v-card-title>
+        <v-card-text class="pt-2">
+          Would you like to create another event for this club?
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="goToEventList">
+            View Events
+          </v-btn>
+          <v-btn color="primary" rounded="lg" prepend-icon="mdi-calendar-plus" @click="keepCreatingEvents">
+            Create Another
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
