@@ -10,6 +10,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
+const submitted = ref(false)
+const submittedData = ref<any>(null)
 const successSnackbar = ref(false)
 const errorSnackbar = ref(false)
 const errorMessage = ref('')
@@ -113,6 +115,8 @@ async function handleSubmit() {
       quantity_notes: quantityNotes.value,
       ...ack.value,
     })
+    submittedData.value = { ...p1.value, ...ack.value, requested_items: [...selectedItems.value], quantity_notes: quantityNotes.value }
+    submitted.value = true
     successSnackbar.value = true
     currentStep.value = 0
   } catch (e: any) {
@@ -153,6 +157,7 @@ const allAcknowledged = computed(() => Object.values(ack.value).every(v => v))
         />
       </v-card>
 
+      <template v-if="!submitted">
       <!-- ── STEP 1: Event Information ── -->
       <v-card v-if="currentStepId === 'event_info'" elevation="2" rounded="lg">
         <v-card-text class="pa-6">
@@ -477,7 +482,6 @@ const allAcknowledged = computed(() => Object.values(ack.value).every(v => v))
           @click="prevStep"
         >Previous</v-btn>
         <v-spacer v-else />
-
         <v-btn
           v-if="currentStepId !== 'acknowledgements'"
           color="primary"
@@ -486,26 +490,34 @@ const allAcknowledged = computed(() => Object.values(ack.value).every(v => v))
           :disabled="currentStepId === 'items' && selectedItems.length === 0"
           @click="nextStep"
         >Next</v-btn>
-
-        <div class="d-flex" style="gap: 12px;">
-          <v-btn
-            variant="outlined"
-            color="primary"
-            prepend-icon="mdi-download"
-            rounded="lg"
-            :disabled="!allAcknowledged"
-            @click="downloadResourceCheckoutPDF({ ...p1, ...ack, requested_items: selectedItems, quantity_notes: quantityNotes })"
-          >Download PDF</v-btn>
-          <v-btn
-            color="primary"
-            prepend-icon="mdi-send"
-            rounded="lg"
-            :loading="loading"
-            :disabled="!allAcknowledged"
-            @click="handleSubmit"
-          >Submit Request</v-btn>
-        </div>
+        <v-btn
+          v-else
+          color="primary"
+          prepend-icon="mdi-send"
+          rounded="lg"
+          :loading="loading"
+          :disabled="!allAcknowledged"
+          @click="handleSubmit"
+        >Submit Request</v-btn>
       </div>
+      </template>
+
+      <!-- ── Success State ── -->
+      <v-card v-if="submitted" elevation="2" rounded="lg" class="mt-5">
+        <v-card-text class="pa-8 text-center">
+          <v-icon size="64" color="success" class="mb-4">mdi-check-circle</v-icon>
+          <h2 class="text-h5 font-weight-bold mb-2">Request Submitted!</h2>
+          <p class="text-medium-emphasis mb-6">Your resource checkout request has been submitted. Download a copy for your records.</p>
+          <div class="d-flex justify-center" style="gap: 12px;">
+            <v-btn color="primary" variant="outlined" prepend-icon="mdi-download" rounded="lg" @click="downloadResourceCheckoutPDF(submittedData)">
+              Download PDF
+            </v-btn>
+            <v-btn color="primary" rounded="lg" prepend-icon="mdi-plus" @click="submitted = false; currentStep = 0">
+              Submit Another
+            </v-btn>
+          </div>
+        </v-card-text>
+      </v-card>
 
     </v-container>
 

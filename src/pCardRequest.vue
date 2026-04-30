@@ -10,6 +10,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
+const submitted = ref(false)
+const submittedData = ref<any>(null)
 const successSnackbar = ref(false)
 const errorSnackbar = ref(false)
 const errorMessage = ref('')
@@ -201,6 +203,8 @@ async function handleSubmit() {
       ...p9.value,
       ...p10.value,
     })
+    submittedData.value = { ...p1.value, ...p2.value, ...p3.value, ...p4.value, ...p5.value, ...p6.value, vendors: vendors.value, ...p8.value, ...p9.value, ...p10.value }
+    submitted.value = true
     successSnackbar.value = true
     currentStep.value = 0
   } catch (e: any) {
@@ -241,6 +245,7 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be a positive
         />
       </v-card>
 
+      <template v-if="!submitted">
       <!-- ── STEP: Main Form ── -->
       <v-card v-if="currentStepId === 'main'" elevation="2" rounded="lg">
         <v-card-text class="pa-6">
@@ -679,7 +684,6 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be a positive
           @click="prevStep"
         >Previous</v-btn>
         <v-spacer v-else />
-
         <v-btn
           v-if="currentStepId !== 'final'"
           color="primary"
@@ -687,24 +691,33 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be a positive
           rounded="lg"
           @click="nextStep"
         >Next</v-btn>
-
-        <div class="d-flex" style="gap: 12px;">
-          <v-btn
-            variant="outlined"
-            color="primary"
-            prepend-icon="mdi-download"
-            rounded="lg"
-            @click="downloadPCardPDF(p1)"
-          >Download PDF</v-btn>
-          <v-btn
-            color="primary"
-            prepend-icon="mdi-send"
-            rounded="lg"
-            :loading="loading"
-            @click="handleSubmit"
-          >Submit Request</v-btn>
-        </div>
+        <v-btn
+          v-else
+          color="primary"
+          prepend-icon="mdi-send"
+          rounded="lg"
+          :loading="loading"
+          @click="handleSubmit"
+        >Submit Request</v-btn>
       </div>
+      </template>
+
+      <!-- ── Success State ── -->
+      <v-card v-if="submitted" elevation="2" rounded="lg" class="mt-5">
+        <v-card-text class="pa-8 text-center">
+          <v-icon size="64" color="success" class="mb-4">mdi-check-circle</v-icon>
+          <h2 class="text-h5 font-weight-bold mb-2">Request Submitted!</h2>
+          <p class="text-medium-emphasis mb-6">Your P-Card request has been submitted. Download a copy for your records.</p>
+          <div class="d-flex justify-center" style="gap: 12px;">
+            <v-btn color="primary" variant="outlined" prepend-icon="mdi-download" rounded="lg" @click="downloadPCardPDF(submittedData)">
+              Download PDF
+            </v-btn>
+            <v-btn color="primary" rounded="lg" prepend-icon="mdi-plus" @click="submitted = false; currentStep = 0">
+              Submit Another
+            </v-btn>
+          </div>
+        </v-card-text>
+      </v-card>
 
     </v-container>
 

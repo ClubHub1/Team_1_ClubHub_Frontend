@@ -74,20 +74,29 @@ function addTwoFields(doc: jsPDF, label1: string, val1: string, label2: string, 
 }
 
 function addCheckbox(doc: jsPDF, label: string, checked: boolean, x: number, y: number) {
-  doc.setDrawColor(PRIMARY)
+  // Draw outer box
+  doc.setDrawColor(checked ? PRIMARY : '#aaaaaa')
+  doc.setLineWidth(0.4)
   doc.setFillColor(checked ? PRIMARY : WHITE)
-  doc.rect(x, y - 3, 4, 4, checked ? 'F' : 'S')
+  doc.roundedRect(x, y - 3.5, 5, 5, 0.8, 0.8, checked ? 'FD' : 'S')
+
+  // Draw checkmark as lines if checked
   if (checked) {
-    doc.setTextColor(WHITE)
-    doc.setFontSize(6)
-    doc.text('✓', x + 0.8, y + 0.2)
+    doc.setDrawColor(WHITE)
+    doc.setLineWidth(0.8)
+    doc.line(x + 1, y + 0.2, x + 2.2, y + 1.4)
+    doc.line(x + 2.2, y + 1.4, x + 4.2, y - 1.2)
+    doc.setLineWidth(0.2)
   }
+
+  doc.setDrawColor('#dddddd')
+  doc.setLineWidth(0.2)
   doc.setTextColor(BLACK)
-  doc.setFontSize(8)
+  doc.setFontSize(8.5)
   doc.setFont('helvetica', 'normal')
-  const lines = doc.splitTextToSize(label, 160)
-  doc.text(lines, x + 6, y)
-  return y + lines.length * 5 + 2
+  const lines = doc.splitTextToSize(label, 158)
+  doc.text(lines, x + 7, y)
+  return y + lines.length * 5.5 + 2
 }
 
 function addFooter(doc: jsPDF) {

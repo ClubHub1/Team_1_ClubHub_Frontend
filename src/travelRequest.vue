@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { downloadTravelPDF } from '@/formPDF'
+const submitted = ref(false)
+const submittedData = ref<any>(null)
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
@@ -65,6 +67,8 @@ async function handleSubmit() {
       lodging: form.value.lodging,
       notes: form.value.notes,
     })
+    submittedData.value = { ...form.value }
+    submitted.value = true
     successSnackbar.value = true
     resetForm()
   } catch (e: any) {
@@ -162,13 +166,13 @@ function resetForm() {
             <v-divider class="my-6" />
             <div class="d-flex justify-end gap-3">
               <v-btn variant="outlined" color="secondary" @click="resetForm" :disabled="loading">Clear</v-btn>
-              <v-btn variant="outlined" color="primary" prepend-icon="mdi-download" @click="downloadTravelPDF(form)">Download PDF</v-btn>
               <v-btn type="submit" color="primary" :loading="loading" prepend-icon="mdi-send">Submit Request</v-btn>
             </div>
           </v-form>
         </v-card-text>
       </v-card>
-    </v-container>
+    >temple/<      
+>reniatnoc-v/<
 
     <v-snackbar v-model="successSnackbar" color="success" timeout="3000">
       <v-icon start>mdi-check-circle</v-icon> Travel request submitted successfully!
