@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { downloadPCardPDF } from '@/formPDF'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
@@ -687,14 +688,22 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be a positive
           @click="nextStep"
         >Next</v-btn>
 
-        <v-btn
-          v-else
-          color="primary"
-          prepend-icon="mdi-send"
-          rounded="lg"
-          :loading="loading"
-          @click="handleSubmit"
-        >Submit Request</v-btn>
+        <div class="d-flex" style="gap: 12px;">
+          <v-btn
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-download"
+            rounded="lg"
+            @click="downloadPCardPDF(p1)"
+          >Download PDF</v-btn>
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-send"
+            rounded="lg"
+            :loading="loading"
+            @click="handleSubmit"
+          >Submit Request</v-btn>
+        </div>
       </div>
 
     </v-container>
