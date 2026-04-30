@@ -4,10 +4,12 @@ import { downloadPCardPDF } from '@/formPDF'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
-import { useAuthStore } from '@/stores/auth'
+import useUserStore from './stores/user'
+import useClubStore from './stores/clubStore'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const userStore = useUserStore()
+const clubStore = useClubStore()
 
 const loading = ref(false)
 const submitted = ref(false)
@@ -179,20 +181,26 @@ function updateVendorCount(n: number) {
   vendors.value = vendors.value.slice(0, n)
 }
 
+function formatFundingSources(sources: string[]) {
+  return sources.join(', ')
+}
+
 async function handleSubmit() {
   loading.value = true
   try {
-    const user = authStore.user
-    const membership = await feathersClient.service('Club Membership').find({
-      query: { userid: user.user_id, is_active: true, $limit: 1 }
+    const userId = userStore.id
+    const selectedClubId = clubStore.id
+    const membership = await feathersClient.service('ClubMembership').find({
+      query: { userid: userId, is_active: true, $limit: 1 }
     })
     const rows = membership.data ?? membership
-    const clubId = rows[0]?.clubid
+    const clubId = selectedClubId ?? rows[0]?.clubid
 
     await feathersClient.service('p-card-requests').create({
       club: clubId,
-      requested_by: user.user_id,
+      submitted_by: userId,
       ...p1.value,
+      funding_sources: formatFundingSources(p1.value.funding_sources),
       ...p2.value,
       ...p3.value,
       ...p4.value,

@@ -271,7 +271,8 @@ export function downloadResourceCheckoutPDF(form: any) {
 // ── Single Transaction Receipt PDF ─────────────────────────────
 export function downloadTransactionPDF(tx: any, clubName: string) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const isIncome = Number(tx.amount) > 0
+  const isIncome = tx.type === 'income'
+  const amount = Math.abs(Number(tx.amount) || 0)
 
   addHeader(doc, isIncome ? 'Income Receipt' : 'Expense Receipt', clubName || 'Club Finances')
 
@@ -285,9 +286,9 @@ export function downloadTransactionPDF(tx: any, clubName: string) {
   doc.setTextColor(textColor)
   doc.setFontSize(22)
   doc.setFont('helvetica', 'bold')
-  const sign = isIncome ? '+' : ''
+  const sign = isIncome ? '+' : '-'
   doc.text(
-    sign + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(tx.amount)),
+    sign + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount),
     105, y + 10, { align: 'center' }
   )
   doc.setFontSize(9)
@@ -298,17 +299,11 @@ export function downloadTransactionPDF(tx: any, clubName: string) {
   y = addSectionLabel(doc, 'Transaction Details', y)
   y = addField(doc, 'Title / Description', tx.title, 14, y)
   y = addTwoFields(doc, 'Date', tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—', 'Category', tx.category || '—', y)
-  y = addTwoFields(doc, 'Payment Method', tx.payment_method || '—', isIncome ? 'Payer / Source' : 'Vendor / Merchant', tx.vendor_payer || '—', y)
-  y = addField(doc, 'Reference / Invoice Number', tx.reference_number || '—', 14, y)
+  y = addTwoFields(doc, 'Type', tx.type || '—', 'Amount', sign + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount), y)
 
-  if (tx.receipt_url) {
-    y = addSectionLabel(doc, 'Receipt', y)
-    y = addField(doc, 'Receipt URL', tx.receipt_url, 14, y)
-  }
-
-  if (tx.notes) {
-    y = addSectionLabel(doc, 'Notes', y)
-    y = addField(doc, 'Additional Notes', tx.notes, 14, y)
+  if (tx.description) {
+    y = addSectionLabel(doc, 'Description', y)
+    y = addField(doc, 'Description', tx.description, 14, y)
   }
 
   addFooter(doc)
@@ -321,11 +316,15 @@ export function downloadTransactionReportPDF(transactions: any[], clubName: stri
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   addHeader(doc, 'Finance Report', clubName || 'Club Finances')
 
-  const income = transactions.filter(t => Number(t.amount) > 0)
-  const expenses = transactions.filter(t => Number(t.amount) < 0)
-  const totalBalance = transactions.reduce((s, t) => s + Number(t.amount), 0)
-  const totalIncome = income.reduce((s, t) => s + Number(t.amount), 0)
-  const totalExpenses = expenses.reduce((s, t) => s + Number(t.amount), 0)
+  const signedAmount = (tx: any) => {
+    const amount = Math.abs(Number(tx.amount) || 0)
+    return tx.type === 'expense' ? -amount : amount
+  }
+  const income = transactions.filter(t => t.type === 'income')
+  const expenses = transactions.filter(t => t.type === 'expense')
+  const totalBalance = transactions.reduce((s, t) => s + signedAmount(t), 0)
+  const totalIncome = income.reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0)
+  const totalExpenses = expenses.reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0)
 
   const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
   const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
@@ -391,7 +390,7 @@ export function downloadTransactionReportPDF(transactions: any[], clubName: stri
   y += 8
 
   // Table header
-  const cols = { date: 14, title: 44, category: 100, method: 140, amount: 196 }
+  const cols = { date: 14, title: 44, category: 100, type: 140, amount: 196 }
 
   const drawTableHeader = (yPos: number) => {
     doc.setFillColor('#041E42')
@@ -402,7 +401,7 @@ export function downloadTransactionReportPDF(transactions: any[], clubName: stri
     doc.text('DATE', cols.date, yPos)
     doc.text('DESCRIPTION', cols.title, yPos)
     doc.text('CATEGORY', cols.category, yPos)
-    doc.text('METHOD', cols.method, yPos)
+    doc.text('TYPE', cols.type, yPos)
     doc.text('AMOUNT', cols.amount, yPos, { align: 'right' })
     return yPos + 5
   }
@@ -423,7 +422,7 @@ export function downloadTransactionReportPDF(transactions: any[], clubName: stri
       doc.rect(14, y - 3, 182, 7, 'F')
     }
 
-    const isIncome = Number(tx.amount) > 0
+    const isIncome = tx.type === 'income'
     doc.setTextColor(MED_GRAY)
     doc.setFontSize(7)
     doc.setFont('helvetica', 'normal')
@@ -438,13 +437,13 @@ export function downloadTransactionReportPDF(transactions: any[], clubName: stri
     const cat = doc.splitTextToSize(tx.category || '—', 36)[0]
     doc.text(cat, cols.category, y)
 
-    const method = doc.splitTextToSize(tx.payment_method || '—', 36)[0]
-    doc.text(method, cols.method, y)
+    const type = doc.splitTextToSize(tx.type || '—', 36)[0]
+    doc.text(type, cols.type, y)
 
     doc.setTextColor(isIncome ? '#2e7d32' : '#c62828')
     doc.setFont('helvetica', 'bold')
-    const sign = isIncome ? '+' : ''
-    doc.text(sign + fmt(Number(tx.amount)), cols.amount, y, { align: 'right' })
+    const sign = isIncome ? '+' : '-'
+    doc.text(sign + fmt(Math.abs(Number(tx.amount) || 0)), cols.amount, y, { align: 'right' })
 
     y += 7
   })

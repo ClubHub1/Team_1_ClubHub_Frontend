@@ -2,12 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { downloadTransactionPDF, downloadTransactionReportPDF } from '@/formPDF'
 import useClubStore from '@/stores/clubStore'
+import useUserStore from '@/stores/user'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const clubStore = useClubStore()
+const userStore = useUserStore()
 const transactions = ref<any[]>([])
 const loading = ref(false)
 const addDialog = ref(false)
@@ -26,11 +28,7 @@ const newTx = ref({
   type: 'expense',
   category: '',
   transaction_date: new Date().toISOString().slice(0, 10),
-  payment_method: '',
-  vendor_payer: '',
-  receipt_url: '',
-  reference_number: '',
-  notes: '',
+  description: '',
 })
 
 // Expanded categories
@@ -64,31 +62,36 @@ const incomeCategories = [
   'Other',
 ]
 
-const paymentMethods = [
-  'Cash',
-  'Check',
-  'Credit Card',
-  'P-Card',
-  'Bank Transfer',
-  'Venmo / PayPal',
-  'Zelle',
-  'Other',
-]
-
 const allCategories = computed(() => newTx.value.type === 'income' ? incomeCategories : expenseCategories)
 const allFilterCategories = [...new Set([...expenseCategories, ...incomeCategories])]
 
 onMounted(async () => { await loadTransactions() })
 
+function currentUserId() {
+  const authUser = authStore.user as any
+  return userStore.id ?? authUser?.id ?? authUser?.user_id ?? null
+}
+
+async function resolveClubId() {
+  if (clubStore.id) return clubStore.id
+
+  const userId = currentUserId()
+  if (!userId) throw new Error('You must be logged in to manage transactions.')
+
+  const membership = await feathersClient.service('ClubMembership').find({
+    query: { userid: userId, is_active: true, $limit: 1 }
+  })
+  const rows = membership.data ?? membership
+  const clubId = rows[0]?.clubid
+
+  if (!clubId) throw new Error('No active club membership found.')
+  return clubId
+}
+
 async function loadTransactions() {
   loading.value = true
   try {
-    const user = authStore.user
-    const membership = await feathersClient.service('ClubMembership').find({
-      query: { userid: user.user_id, $limit: 1 }
-    })
-    const rows = membership.data ?? membership
-    const clubId = rows[0]?.clubid
+    const clubId = await resolveClubId()
     const result = await feathersClient.service('transactions').find({
       query: { club: clubId, $limit: 500, $sort: { transaction_date: -1 } }
     })
@@ -102,43 +105,38 @@ async function loadTransactions() {
 
 const filteredTransactions = computed(() => transactions.value.filter((tx) => {
   const q = searchQuery.value.toLowerCase()
-  const matchSearch = !q || tx.title?.toLowerCase().includes(q) || tx.category?.toLowerCase().includes(q) || tx.vendor_payer?.toLowerCase().includes(q)
+  const matchSearch = !q || tx.title?.toLowerCase().includes(q) || tx.category?.toLowerCase().includes(q) || tx.description?.toLowerCase().includes(q)
   const matchCat = !filterCategory.value || tx.category === filterCategory.value
-  const matchType = !filterType.value ||
-    (filterType.value === 'income' && tx.amount > 0) ||
-    (filterType.value === 'expense' && tx.amount < 0)
+  const matchType = !filterType.value || tx.type === filterType.value
   return matchSearch && matchCat && matchType
 }))
 
-const totalBalance = computed(() => transactions.value.reduce((sum, tx) => sum + Number(tx.amount), 0))
-const totalIncome = computed(() => transactions.value.filter(t => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0))
-const totalExpenses = computed(() => transactions.value.filter(t => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0))
+function signedAmount(tx: any) {
+  const amount = Number(tx.amount) || 0
+  return tx.type === 'expense' ? -Math.abs(amount) : Math.abs(amount)
+}
+
+const totalBalance = computed(() => transactions.value.reduce((sum, tx) => sum + signedAmount(tx), 0))
+const totalIncome = computed(() => transactions.value.filter(t => t.type === 'income').reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0))
+const totalExpenses = computed(() => transactions.value.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0))
 
 async function submitTransaction() {
   if (!formValid.value) return
   formLoading.value = true
   try {
-    const user = authStore.user
-    const membership = await feathersClient.service('Club Membership').find({
-      query: { userid: user.user_id, is_active: true, $limit: 1 }
-    })
-    const rows = membership.data ?? membership
-    const clubId = rows[0]?.clubid
-    const signedAmount = newTx.value.type === 'expense'
-      ? -Math.abs(newTx.value.amount!)
-      : Math.abs(newTx.value.amount!)
+    const userId = currentUserId()
+    if (!userId) throw new Error('You must be logged in to add a transaction.')
+
+    const clubId = await resolveClubId()
     const created = await feathersClient.service('transactions').create({
       club: clubId,
-      created_by: user.user_id,
+      created_by: userId,
+      type: newTx.value.type,
       title: newTx.value.title,
-      amount: signedAmount,
-      category: newTx.value.category,
+      amount: Math.abs(Number(newTx.value.amount)),
+      description: newTx.value.description || undefined,
       transaction_date: newTx.value.transaction_date,
-      payment_method: newTx.value.payment_method,
-      vendor_payer: newTx.value.vendor_payer,
-      receipt_url: newTx.value.receipt_url,
-      reference_number: newTx.value.reference_number,
-      notes: newTx.value.notes,
+      category: newTx.value.category,
     })
     transactions.value.unshift(created)
     addDialog.value = false
@@ -156,8 +154,8 @@ function confirmDelete(tx: any) { deleteTarget.value = tx; deleteDialog.value = 
 async function doDelete() {
   if (!deleteTarget.value) return
   try {
-    await feathersClient.service('transactions').remove(deleteTarget.value.transaction_id)
-    transactions.value = transactions.value.filter(t => t.transaction_id !== deleteTarget.value.transaction_id)
+    await feathersClient.service('transactions').remove(deleteTarget.value.id)
+    transactions.value = transactions.value.filter(t => t.id !== deleteTarget.value.id)
     showSnack('Transaction deleted.', 'info')
   } catch { showSnack('Failed to delete.', 'error') }
   finally { deleteDialog.value = false; deleteTarget.value = null }
@@ -167,8 +165,7 @@ function resetForm() {
   newTx.value = {
     title: '', amount: null, type: 'expense', category: '',
     transaction_date: new Date().toISOString().slice(0, 10),
-    payment_method: '', vendor_payer: '', receipt_url: '',
-    reference_number: '', notes: '',
+    description: '',
   }
 }
 
@@ -223,7 +220,7 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
               <v-icon color="success">mdi-trending-up</v-icon>
             </div>
             <p class="text-h4 font-weight-bold text-success">{{ formatCurrency(totalIncome) }}</p>
-            <p class="text-caption text-medium-emphasis mt-1">{{ transactions.filter(t => t.amount > 0).length }} transactions</p>
+            <p class="text-caption text-medium-emphasis mt-1">{{ transactions.filter(t => t.type === 'income').length }} transactions</p>
           </v-card>
         </v-col>
         <v-col cols="12" sm="4">
@@ -233,7 +230,7 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
               <v-icon color="error">mdi-trending-down</v-icon>
             </div>
             <p class="text-h4 font-weight-bold text-error">{{ formatCurrency(totalExpenses) }}</p>
-            <p class="text-caption text-medium-emphasis mt-1">{{ transactions.filter(t => t.amount < 0).length }} transactions</p>
+            <p class="text-caption text-medium-emphasis mt-1">{{ transactions.filter(t => t.type === 'expense').length }} transactions</p>
           </v-card>
         </v-col>
       </v-row>
@@ -285,33 +282,24 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
         </div>
 
         <v-list v-else lines="two" class="pa-0">
-          <template v-for="(tx, idx) in filteredTransactions" :key="tx.transaction_id">
+          <template v-for="(tx, idx) in filteredTransactions" :key="tx.id">
             <v-divider v-if="idx > 0" />
             <v-list-item class="py-3 px-6">
               <template #prepend>
-                <v-avatar :color="tx.amount > 0 ? 'success' : 'error'" variant="tonal" size="42">
-                  <v-icon size="20">{{ tx.amount > 0 ? 'mdi-arrow-down-circle' : 'mdi-arrow-up-circle' }}</v-icon>
+                <v-avatar :color="tx.type === 'income' ? 'success' : 'error'" variant="tonal" size="42">
+                  <v-icon size="20">{{ tx.type === 'income' ? 'mdi-arrow-down-circle' : 'mdi-arrow-up-circle' }}</v-icon>
                 </v-avatar>
               </template>
               <v-list-item-title class="font-weight-medium">{{ tx.title }}</v-list-item-title>
               <v-list-item-subtitle>
                 <v-chip size="x-small" variant="tonal" color="blue-grey" class="mr-2">{{ tx.category }}</v-chip>
-                <span v-if="tx.payment_method" class="mr-2">
-                  <v-chip size="x-small" variant="tonal" color="purple">{{ tx.payment_method }}</v-chip>
-                </span>
                 <span class="text-caption text-medium-emphasis">{{ formatDate(tx.transaction_date) }}</span>
-                <span v-if="tx.vendor_payer" class="text-caption text-medium-emphasis ml-2">· {{ tx.vendor_payer }}</span>
-                <span v-if="tx.notes" class="text-caption text-medium-emphasis ml-2">· {{ tx.notes }}</span>
-                <span v-if="tx.receipt_url" class="ml-2">
-                  <a :href="tx.receipt_url" target="_blank" class="text-caption text-primary">
-                    <v-icon size="12">mdi-paperclip</v-icon> Receipt
-                  </a>
-                </span>
+                <span v-if="tx.description" class="text-caption text-medium-emphasis ml-2">· {{ tx.description }}</span>
               </v-list-item-subtitle>
               <template #append>
                 <div class="d-flex align-center" style="gap: 8px;">
-                  <span :class="['text-h6', 'font-weight-bold', tx.amount > 0 ? 'text-success' : 'text-error']">
-                    {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
+                  <span :class="['text-h6', 'font-weight-bold', tx.type === 'income' ? 'text-success' : 'text-error']">
+                    {{ tx.type === 'income' ? '+' : '-' }}{{ formatCurrency(Math.abs(Number(tx.amount) || 0)) }}
                   </span>
                   <v-btn icon="mdi-receipt" size="small" variant="text" color="primary" @click="downloadTransactionPDF(tx, clubStore.name)" />
                   <v-btn icon="mdi-delete-outline" size="small" variant="text" color="grey" @click="confirmDelete(tx)" />
@@ -379,65 +367,21 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
               </v-col>
             </v-row>
 
-            <v-row dense>
-              <v-col cols="6">
-                <v-select
-                  v-model="newTx.category"
-                  :items="allCategories"
-                  label="Category"
-                  prepend-inner-icon="mdi-tag-outline"
-                  :rules="[required]"
-                  variant="outlined"
-                />
-              </v-col>
-              <v-col cols="6">
-                <v-select
-                  v-model="newTx.payment_method"
-                  :items="paymentMethods"
-                  label="Payment Method"
-                  prepend-inner-icon="mdi-credit-card-outline"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
-
-            <v-divider class="my-4" />
-
-            <!-- Vendor / Payer Info -->
-            <p class="text-overline text-primary mb-3">
-              {{ newTx.type === 'expense' ? 'Vendor Information' : 'Payer Information' }}
-            </p>
-            <v-text-field
-              v-model="newTx.vendor_payer"
-              :label="newTx.type === 'expense' ? 'Vendor / Merchant Name' : 'Payer / Source Name'"
-              :prepend-inner-icon="newTx.type === 'expense' ? 'mdi-store' : 'mdi-account'"
+            <v-select
+              v-model="newTx.category"
+              :items="allCategories"
+              label="Category"
+              prepend-inner-icon="mdi-tag-outline"
+              :rules="[required]"
               variant="outlined"
-              class="mb-3"
-            />
-            <v-text-field
-              v-model="newTx.reference_number"
-              label="Reference / Check / Invoice Number (optional)"
-              prepend-inner-icon="mdi-pound"
-              variant="outlined"
-              class="mb-3"
             />
 
             <v-divider class="my-4" />
 
-            <!-- Receipt & Notes -->
-            <p class="text-overline text-primary mb-3">Receipt & Notes</p>
-            <v-text-field
-              v-model="newTx.receipt_url"
-              label="Receipt URL (optional)"
-              prepend-inner-icon="mdi-paperclip"
-              variant="outlined"
-              hint="Paste a link to a scanned receipt, Google Drive file, or image"
-              persistent-hint
-              class="mb-4"
-            />
+            <p class="text-overline text-primary mb-3">Description</p>
             <v-textarea
-              v-model="newTx.notes"
-              label="Additional Notes (optional)"
+              v-model="newTx.description"
+              label="Description (optional)"
               prepend-inner-icon="mdi-note-text"
               variant="outlined"
               rows="2"
