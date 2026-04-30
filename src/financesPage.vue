@@ -85,10 +85,10 @@ async function loadTransactions() {
   try {
     const user = authStore.user
     const membership = await feathersClient.service('ClubMembership').find({
-      query: { 'user': user.id, $limit: 1 }
+      query: { userid: user.user_id, $limit: 1 }
     })
     const rows = membership.data ?? membership
-    const clubId = rows[0]?.club
+    const clubId = rows[0]?.clubid
     const result = await feathersClient.service('transactions').find({
       query: { club: clubId, $limit: 500, $sort: { transaction_date: -1 } }
     })
@@ -105,45 +105,14 @@ const filteredTransactions = computed(() => transactions.value.filter((tx) => {
   const matchSearch = !q || tx.title?.toLowerCase().includes(q) || tx.category?.toLowerCase().includes(q) || tx.vendor_payer?.toLowerCase().includes(q)
   const matchCat = !filterCategory.value || tx.category === filterCategory.value
   const matchType = !filterType.value ||
-    (filterType.value === 'income' && tx.type === 'income') ||
-    (filterType.value === 'expense' && tx.type === 'expense')
+    (filterType.value === 'income' && tx.amount > 0) ||
+    (filterType.value === 'expense' && tx.amount < 0)
   return matchSearch && matchCat && matchType
 }))
 
-const totalBalance = computed(() => transactions.value.reduce((sum, tx) => sum + (tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)), 0))
-const totalIncome = computed(() => transactions.value.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0))
-const totalExpenses = computed(() => transactions.value.filter(t => t.type === 'expense').reduce((s, t) => s - Number(t.amount), 0))
-
-
-// Map UI category labels to database enum values
-function categoryToEnum(cat: string): string {
-  const map: Record<string, string> = {
-    'Event Expenses': 'event_expense',
-    'Office Supplies': 'office',
-    'Food & Beverage': 'food_beverage',
-    'Transportation': 'transport',
-    'Technology': 'technology',
-    'Marketing / Printing': 'marketing',
-    'Dues / Fees': 'dues_fees',
-    'Dues Collected': 'collected_dues',
-    'Fundraising': 'fundraising',
-    'Cash Sale': 'fundraising',
-    'Sponsorship': 'sponsor',
-    'University Allocation': 'uni_allocation',
-    'Donations': 'donation',
-    'Venue / Facility': 'other',
-    'Equipment': 'other',
-    'Awards / Gifts': 'other',
-    'Travel & Lodging': 'transport',
-    'Uniforms / Apparel': 'other',
-    'Grants': 'uni_allocation',
-    'Ticket Sales': 'fundraising',
-    'Merchandise Sales': 'fundraising',
-    'Interest / Investment': 'other',
-    'Other': 'other',
-  }
-  return map[cat] ?? 'other'
-}
+const totalBalance = computed(() => transactions.value.reduce((sum, tx) => sum + Number(tx.amount), 0))
+const totalIncome = computed(() => transactions.value.filter(t => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0))
+const totalExpenses = computed(() => transactions.value.filter(t => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0))
 
 async function submitTransaction() {
   if (!formValid.value) return
@@ -151,13 +120,16 @@ async function submitTransaction() {
   try {
     const user = authStore.user
     const membership = await feathersClient.service('Club Membership').find({
-      query: { 'user': user.id, is_active: true, $limit: 1 }
+      query: { userid: user.user_id, is_active: true, $limit: 1 }
     })
     const rows = membership.data ?? membership
-    const clubId = rows[0]?.club
+    const clubId = rows[0]?.clubid
+    const signedAmount = newTx.value.type === 'expense'
+      ? -Math.abs(newTx.value.amount!)
+      : Math.abs(newTx.value.amount!)
     const created = await feathersClient.service('transactions').create({
       club: clubId,
-      created_by: user.id,
+      created_by: user.user_id,
       title: newTx.value.title,
       amount: signedAmount,
       category: newTx.value.category,
@@ -184,7 +156,7 @@ function confirmDelete(tx: any) { deleteTarget.value = tx; deleteDialog.value = 
 async function doDelete() {
   if (!deleteTarget.value) return
   try {
-    await feathersClient.service('transactions').remove(deleteTarget.value.id)
+    await feathersClient.service('transactions').remove(deleteTarget.value.transaction_id)
     transactions.value = transactions.value.filter(t => t.transaction_id !== deleteTarget.value.transaction_id)
     showSnack('Transaction deleted.', 'info')
   } catch { showSnack('Failed to delete.', 'error') }
@@ -317,8 +289,8 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
             <v-divider v-if="idx > 0" />
             <v-list-item class="py-3 px-6">
               <template #prepend>
-                <v-avatar :color="tx.type === 'income' ? 'success' : 'error'" variant="tonal" size="42">
-                  <v-icon size="20">{{ tx.type === 'income' ? 'mdi-arrow-down-circle' : 'mdi-arrow-up-circle' }}</v-icon>
+                <v-avatar :color="tx.amount > 0 ? 'success' : 'error'" variant="tonal" size="42">
+                  <v-icon size="20">{{ tx.amount > 0 ? 'mdi-arrow-down-circle' : 'mdi-arrow-up-circle' }}</v-icon>
                 </v-avatar>
               </template>
               <v-list-item-title class="font-weight-medium">{{ tx.title }}</v-list-item-title>
@@ -338,8 +310,8 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
               </v-list-item-subtitle>
               <template #append>
                 <div class="d-flex align-center" style="gap: 8px;">
-                  <span :class="['text-h6', 'font-weight-bold', tx.type === 'income' ? 'text-success' : 'text-error']">
-                    {{ tx.type === 'income' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                  <span :class="['text-h6', 'font-weight-bold', tx.amount > 0 ? 'text-success' : 'text-error']">
+                    {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
                   </span>
                   <v-btn icon="mdi-receipt" size="small" variant="text" color="primary" @click="downloadTransactionPDF(tx, clubStore.name)" />
                   <v-btn icon="mdi-delete-outline" size="small" variant="text" color="grey" @click="confirmDelete(tx)" />
