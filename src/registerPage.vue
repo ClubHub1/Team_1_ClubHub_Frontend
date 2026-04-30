@@ -2,76 +2,48 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
-import { feathersClient } from './backendAPI'
 import useUserStore from './stores/user'
 
-const registerForm = ref(null)
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const router = useRouter()
 
-const error = ref('')
-const loading = ref(false)
 const valid = ref(false)
+const email = ref('')
+const password = ref('')
 const showPassword = ref(false)
-
-const first_name = ref('')
-const last_name = ref('')
-const new_email = ref('')
-const new_password = ref('')
-const rePassword = ref('')
+const loading = ref(false)
+const error = ref('')
 
 const emailRules = [
   (v: string) => !!v || 'E-mail is required.',
-  (v: string) => /^[a-z0-9._%+-]+@unr\.edu$/i.test(v) || 'Must be a valid UNR email (@unr.edu).',
+  (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid.',
 ]
 const passwordRules = [
   (v: string) => !!v || 'Password is required.',
-  (v: string) => v.length >= 8 || 'At least 8 characters.',
-  (v: string) => /[A-Z]/.test(v) || 'At least 1 uppercase letter.',
-  (v: string) => /\d/.test(v) || 'At least 1 number.',
-  (v: string) => /[^A-Za-z0-9]/.test(v) || 'At least 1 special character.',
-  (v: string) => v === rePassword.value || 'Passwords must match.',
 ]
-const nameRules = [
-  (v: string) => (!!v && v.length < 31) || 'Required, max 30 characters.',
-]
-
-function refreshPasswordRules() {
-  (registerForm.value as any)?.validate()
-}
 
 async function handleSubmit() {
   if (!valid.value) return
   error.value = ''
   loading.value = true
   try {
-    const now = new Date().toISOString()
-    await feathersClient.service('User')._create({
-      password: new_password.value,
-      first_name: first_name.value,
-      last_name: last_name.value,
-      email: new_email.value,
-      role: 'student',
-      created_at: now,
-    }).catch((err: any) => { error.value = err.message })
-
-    if (!error.value) {
-      authStore.clearError()
-      const loginRes = await authStore.authenticate({
-        strategy: 'local',
-        email: new_email.value,
-        password: new_password.value,
-      })
-      if (loginRes) {
-        userStore.setEmail(loginRes.User?.email)
-        userStore.setId(loginRes.User?.id)
-        userStore.setFirstName(loginRes.User?.first_name)
-        userStore.setLastName(loginRes.User?.last_name)
-      }
+    authStore.clearError()
+    const res = await authStore.authenticate({
+      strategy: 'local',
+      school_email: email.value,
+      password: password.value,
+    })
+    if (res) {
+      userStore.setEmail(res.User?.email)
+      userStore.setId(res.User?.id)
+      userStore.setFirstName(res.User?.first_name)
+      userStore.setLastName(res.User?.last_name)
     }
+    const redirectTo = authStore.loginRedirect || '/dashboard'
+    authStore.loginRedirect = null
   } catch (e: any) {
-    // handled above
+    error.value = authStore.error?.message || 'Login failed. Please check your email and password.'
   } finally {
     loading.value = false
     if (authStore.isAuthenticated) router.push('/dashboard')
@@ -82,8 +54,8 @@ async function handleSubmit() {
 <template>
   <v-app>
     <v-main style="background: #f5f5f5;">
-      <v-container class="d-flex align-center justify-center py-10">
-        <v-row justify="center" align="start" style="width: 100%; gap: 16px;" no-gutters>
+      <v-container class="d-flex align-center justify-center" style="min-height: 100vh;">
+        <v-row justify="center" align="center" style="width: 100%; gap: 16px;" no-gutters>
 
           <!-- Left accent panel -->
           <v-col cols="12" md="5" class="d-none d-md-flex">
@@ -92,84 +64,49 @@ async function handleSubmit() {
               rounded="lg"
               elevation="0"
               class="pa-10 d-flex flex-column justify-center"
-              style="height: 620px; width: 100%;"
+              style="height: 480px; width: 100%;"
             >
-              <v-icon size="48" color="white" class="mb-6">mdi-rocket-launch</v-icon>
-              <h1 class="text-h3 font-weight-bold text-white mb-4">Let's elevate your club experience.</h1>
-              <p class="text-white" style="opacity: 0.8; font-size: 1.05rem;">
-                Join ClubHub to manage events, connect with members, track finances, and take your organization to the next level.
+              <v-icon size="48" color="white" class="mb-6">mdi-account-group</v-icon>
+              <h1 class="text-h3 font-weight-bold text-white mb-4">Welcome<br/>Back.</h1>
+              <p class="text-white" style="opacity: 0.8; font-size: 1.1rem;">
+                Sign in to manage your clubs, track events, and stay connected with your campus community.
               </p>
             </v-card>
           </v-col>
 
-          <!-- Register form -->
+          <!-- Login form -->
           <v-col cols="12" md="5">
-            <v-card rounded="lg" elevation="2" class="pa-8" style="height: 620px; overflow-y: auto;">
+            <v-card rounded="lg" elevation="2" class="pa-8" style="height: 480px;">
               <div class="mb-6">
-                <h2 class="text-h5 font-weight-bold mb-1">Create an Account</h2>
-                <p class="text-medium-emphasis">Use your UNR email address to register.</p>
+                <h2 class="text-h5 font-weight-bold mb-1">Sign In</h2>
+                <p class="text-medium-emphasis">Enter your UNR credentials to continue.</p>
               </div>
 
-              <v-alert v-if="error" type="error" variant="tonal" rounded="lg" class="mb-4">{{ error }}</v-alert>
+              <v-alert v-if="authStore.error" type="error" variant="tonal" rounded="lg" class="mb-4">
+                {{ authStore.error.message }}
+              </v-alert>
 
-              <v-form ref="registerForm" v-model="valid" @submit.prevent="handleSubmit">
-                <v-row dense>
-                  <v-col cols="6">
-                    <v-text-field
-                      v-model="first_name"
-                      :rules="nameRules"
-                      label="First Name"
-                      prepend-inner-icon="mdi-account"
-                      variant="outlined"
-                      required
-                    />
-                  </v-col>
-                  <v-col cols="6">
-                    <v-text-field
-                      v-model="last_name"
-                      :rules="nameRules"
-                      label="Last Name"
-                      variant="outlined"
-                      required
-                    />
-                  </v-col>
-                </v-row>
-
+              <v-form v-model="valid" @submit.prevent="handleSubmit">
                 <v-text-field
-                  v-model="new_email"
+                  v-model="email"
                   :rules="emailRules"
-                  label="UNR Email"
+                  label="Email Address"
                   prepend-inner-icon="mdi-email-outline"
                   variant="outlined"
                   class="mb-3"
                   required
                 />
-
                 <v-text-field
-                  v-model="new_password"
+                  v-model="password"
                   :rules="passwordRules"
                   label="Password"
                   prepend-inner-icon="mdi-lock-outline"
                   :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
                   :type="showPassword ? 'text' : 'password'"
                   variant="outlined"
-                  hint="8+ chars, 1 uppercase, 1 number, 1 special character"
-                  persistent-hint
-                  class="mb-3"
-                  required
-                  @click:append-inner="showPassword = !showPassword"
-                />
-
-                <v-text-field
-                  v-model="rePassword"
-                  :rules="passwordRules"
-                  label="Confirm Password"
-                  prepend-inner-icon="mdi-lock-check-outline"
-                  :type="showPassword ? 'text' : 'password'"
-                  variant="outlined"
                   class="mb-5"
                   required
-                  @input="refreshPasswordRules"
+                  @click:append-inner="showPassword = !showPassword"
                 />
 
                 <v-btn
@@ -180,14 +117,14 @@ async function handleSubmit() {
                   rounded="lg"
                   :loading="loading"
                   :disabled="!valid"
-                  prepend-icon="mdi-account-plus"
-                >Create Account</v-btn>
+                  prepend-icon="mdi-login"
+                >Sign In</v-btn>
               </v-form>
 
               <v-divider class="my-5" />
               <p class="text-center text-body-2 text-medium-emphasis">
-                Already have an account?
-                <router-link to="/login" class="text-primary font-weight-medium">Sign in here</router-link>
+                Don't have an account?
+                <router-link to="/register" class="text-primary font-weight-medium">Register Here</router-link>
               </p>
             </v-card>
           </v-col>

@@ -49,23 +49,20 @@ async function handleSubmit() {
   try {
     const user = authStore.user
     const membership = await feathersClient.service('Club Membership').find({
-      query: { userid: user.user_id, is_active: true, $limit: 1 }
+      query: { 'user': user.id, is_active: true, $limit: 1 }
     })
     const rows = membership.data ?? membership
-    const clubId = rows[0]?.clubid
+    const clubId = rows[0]?.club
 
+    await // Find travel form template
+    const templates = await feathersClient.service('travel-requests').find({
+      query: { club: clubId, category: 'travel', $limit: 1 }
+    })
+    const templateId = templates.data?.[0]?.id
+    if (!templateId) throw new Error('Travel request form template not found.')
     await feathersClient.service('travel-requests').create({
-      club: clubId,
-      requested_by: user.user_id,
-      destination: form.value.destination,
-      purpose: form.value.purpose,
-      departure_date: form.value.departure_date,
-      return_date: form.value.return_date,
-      num_travelers: form.value.num_travelers,
-      estimated_cost: form.value.estimated_cost,
-      transportation: form.value.transportation,
-      lodging: form.value.lodging,
-      notes: form.value.notes,
+      template: templateId,
+      submitted_by: user.id,
     })
     submittedData.value = { ...form.value }
     submitted.value = true

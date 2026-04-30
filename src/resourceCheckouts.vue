@@ -102,14 +102,14 @@ async function handleSubmit() {
   try {
     const user = authStore.user
     const membership = await feathersClient.service('Club Membership').find({
-      query: { userid: user.user_id, is_active: true, $limit: 1 }
+      query: { 'user': user.id, is_active: true, $limit: 1 }
     })
     const rows = membership.data ?? membership
-    const clubId = rows[0]?.clubid
+    const clubId = rows[0]?.club
 
     await feathersClient.service('resource-checkouts').create({
       club: clubId,
-      requested_by: user.user_id,
+      requested_by: user.id,
       ...p1.value,
       requested_items: selectedItems.value,
       quantity_notes: quantityNotes.value,

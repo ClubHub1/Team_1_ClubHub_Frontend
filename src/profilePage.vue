@@ -1,244 +1,136 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { feathersClient } from './backendAPI'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from './stores/auth'
 import useUserStore from './stores/user'
-import ProfilePhotoUpload from './components/ProfilePhotoUpload.vue'
 
+const authStore = useAuthStore()
 const userStore = useUserStore()
+const router = useRouter()
 
-const firstName = ref(userStore.firstName)
-const lastName = ref(userStore.lastName)
-const email = ref(userStore.email)
-const bio = ref(userStore.bio || '')
-const linkedinUrl = ref(userStore.linkedin_url || '')
-const twitterUrl = ref(userStore.twitter_url || '')
-const instagramUrl = ref(userStore.instagram_url || '')
-const facebookUrl = ref(userStore.facebook_url || '')
-
-const saving = ref(false)
-const error = ref('')
-const success = ref(false)
 const valid = ref(false)
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const loading = ref(false)
+const error = ref('')
 
-const nameRules = [(v: string) => !!v || 'This field is required.']
-const urlRules = [
-  (v: string) => !v || /^https?:\/\/.+/.test(v) || 'Must be a valid URL starting with http:// or https://'
+const emailRules = [
+  (v: string) => !!v || 'E-mail is required.',
+  (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid.',
+]
+const passwordRules = [
+  (v: string) => !!v || 'Password is required.',
 ]
 
-async function saveProfile() {
+async function handleSubmit() {
   if (!valid.value) return
-  saving.value = true
   error.value = ''
-  success.value = false
+  loading.value = true
   try {
-    await feathersClient.service('User').patch(userStore.id, {
-      first_name: firstName.value,
-      last_name: lastName.value,
-      bio: bio.value,
-      linkedin_url: linkedinUrl.value,
-      twitter_url: twitterUrl.value,
-      instagram_url: instagramUrl.value,
-      facebook_url: facebookUrl.value,
+    authStore.clearError()
+    const res = await authStore.authenticate({
+      strategy: 'local',
+      school_email: email.value,
+      password: password.value,
     })
-    // Update the store with the new values
-    userStore.setUser({
-      firstName: firstName.value,
-      lastName: lastName.value,
-      bio: bio.value,
-      linkedin_url: linkedinUrl.value,
-      twitter_url: twitterUrl.value,
-      instagram_url: instagramUrl.value,
-      facebook_url: facebookUrl.value,
-    })
-    success.value = true
-  } catch {
-    error.value = 'Failed to save changes. Please try again.'
+    if (res) {
+      userStore.setEmail(res.User?.email)
+      userStore.setId(res.User?.id)
+      userStore.setFirstName(res.User?.first_name)
+      userStore.setLastName(res.User?.last_name)
+    }
+    const redirectTo = authStore.loginRedirect || '/dashboard'
+    authStore.loginRedirect = null
+  } catch (e: any) {
+    error.value = authStore.error?.message || 'Login failed. Please check your email and password.'
   } finally {
-    saving.value = false
-  }
-}
-
-function onPhotoUploaded(photoUrl: string) {
-  savePhotoUrl(photoUrl)
-}
-
-async function savePhotoUrl(photoPath: string) {
-  try {
-    await feathersClient.service('User').patch(userStore.id, {
-      profile_photo_url: photoPath,
-    })
-    userStore.setProfilePhotoUrl(photoPath)
-    success.value = true
-    setTimeout(() => success.value = false, 3000)
-  } catch {
-    error.value = 'Failed to save profile photo. Please try again.'
+    loading.value = false
+    if (authStore.isAuthenticated) router.push('/dashboard')
   }
 }
 </script>
 
 <template>
-  <v-container class="py-8" max-width="700">
+  <v-app>
+    <v-main style="background: #f5f5f5;">
+      <v-container class="d-flex align-center justify-center" style="min-height: 100vh;">
+        <v-row justify="center" align="center" style="width: 100%; gap: 16px;" no-gutters>
 
-    <!-- Page Header -->
-    <div class="d-flex align-center justify-space-between mb-6">
-      <div>
-        <h1 class="text-h4 font-weight-bold">My Profile</h1>
-        <p class="text-medium-emphasis mt-1">Manage your account information.</p>
-      </div>
-      <v-avatar color="primary" size="52" variant="tonal">
-        <v-icon size="28">mdi-account</v-icon>
-      </v-avatar>
-    </div>
-
-    <!-- Account Info Card -->
-    <v-card elevation="2" rounded="lg" class="mb-6">
-      <v-card-text class="pa-6">
-
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="userStore.profile_photo_url ? 'transparent' : 'primary'" size="64" class="mr-4">
-            <img
-              v-if="userStore.profile_photo_url"
-              :src="`http://localhost:42063${userStore.profile_photo_url}`"
-              alt="Profile photo"
-              class="profile-avatar-image"
-            />
-            <span v-else class="text-h5 text-white font-weight-bold">
-              {{ (userStore.firstName?.[0] ?? '') }}{{ (userStore.lastName?.[0] ?? '') }}
-            </span>
-          </v-avatar>
-          <div>
-            <p class="text-h6 font-weight-bold ma-0">{{ userStore.firstName }} {{ userStore.lastName }}</p>
-            <p class="text-medium-emphasis text-body-2 ma-0">{{ userStore.email }}</p>
-            <p v-if="userStore.bio" class="text-body-2 ma-0 mt-1">{{ userStore.bio }}</p>
-          </div>
-        </div>
-
-        <v-divider class="mb-5" />
-
-        <p class="text-overline text-primary mb-4">Profile Photo</p>
-        <ProfilePhotoUpload @photo-uploaded="onPhotoUploaded" class="mb-5" />
-
-        <v-divider class="mb-5" />
-
-        <p class="text-overline text-primary mb-4">Edit Information</p>
-
-        <v-alert v-if="success" type="success" variant="tonal" rounded="lg" class="mb-4" closable @click:close="success = false">
-          Profile updated successfully!
-        </v-alert>
-        <v-alert v-if="error" type="error" variant="tonal" rounded="lg" class="mb-4">{{ error }}</v-alert>
-
-        <v-form v-model="valid" @submit.prevent="saveProfile">
-          <v-row>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="firstName"
-                label="First Name"
-                :rules="nameRules"
-                prepend-inner-icon="mdi-account"
-                variant="outlined"
-                required
-              />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="lastName"
-                label="Last Name"
-                :rules="nameRules"
-                prepend-inner-icon="mdi-account"
-                variant="outlined"
-                required
-              />
-            </v-col>
-          </v-row>
-
-          <v-text-field
-            v-model="email"
-            label="Email Address"
-            prepend-inner-icon="mdi-email-outline"
-            variant="outlined"
-            readonly
-            disabled
-            class="mb-4"
-            hint="Email cannot be changed."
-            persistent-hint
-          />
-
-          <v-textarea
-            v-model="bio"
-            label="Bio"
-            prepend-inner-icon="mdi-text-box-outline"
-            variant="outlined"
-            rows="3"
-            class="mb-4"
-            hint="Tell others about yourself (optional)"
-            persistent-hint
-          />
-
-          <v-divider class="mb-4" />
-
-          <p class="text-overline text-primary mb-3">Social Media Links</p>
-
-          <v-text-field
-            v-model="linkedinUrl"
-            label="LinkedIn Profile"
-            :rules="urlRules"
-            prepend-inner-icon="mdi-linkedin"
-            variant="outlined"
-            class="mb-3"
-            placeholder="https://linkedin.com/in/yourprofile"
-          />
-
-          <v-text-field
-            v-model="twitterUrl"
-            label="Twitter Profile"
-            :rules="urlRules"
-            prepend-inner-icon="mdi-twitter"
-            variant="outlined"
-            class="mb-3"
-            placeholder="https://twitter.com/yourhandle"
-          />
-
-          <v-text-field
-            v-model="instagramUrl"
-            label="Instagram Profile"
-            :rules="urlRules"
-            prepend-inner-icon="mdi-instagram"
-            variant="outlined"
-            class="mb-3"
-            placeholder="https://instagram.com/yourhandle"
-          />
-
-          <v-text-field
-            v-model="facebookUrl"
-            label="Facebook Profile"
-            :rules="urlRules"
-            prepend-inner-icon="mdi-facebook"
-            variant="outlined"
-            class="mb-4"
-            placeholder="https://facebook.com/yourprofile"
-          />
-
-          <div class="d-flex justify-end">
-            <v-btn
-              type="submit"
+          <!-- Left accent panel -->
+          <v-col cols="12" md="5" class="d-none d-md-flex">
+            <v-card
               color="primary"
               rounded="lg"
-              :loading="saving"
-              :disabled="!valid"
-              prepend-icon="mdi-content-save"
-            >Save Profile</v-btn>
-          </div>
-        </v-form>
-      </v-card-text>
-    </v-card>
-  </v-container>
-</template>
+              elevation="0"
+              class="pa-10 d-flex flex-column justify-center"
+              style="height: 480px; width: 100%;"
+            >
+              <v-icon size="48" color="white" class="mb-6">mdi-account-group</v-icon>
+              <h1 class="text-h3 font-weight-bold text-white mb-4">Welcome<br/>Back.</h1>
+              <p class="text-white" style="opacity: 0.8; font-size: 1.1rem;">
+                Sign in to manage your clubs, track events, and stay connected with your campus community.
+              </p>
+            </v-card>
+          </v-col>
 
-<style scoped>
-.profile-avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-</style>
+          <!-- Login form -->
+          <v-col cols="12" md="5">
+            <v-card rounded="lg" elevation="2" class="pa-8" style="height: 480px;">
+              <div class="mb-6">
+                <h2 class="text-h5 font-weight-bold mb-1">Sign In</h2>
+                <p class="text-medium-emphasis">Enter your UNR credentials to continue.</p>
+              </div>
+
+              <v-alert v-if="authStore.error" type="error" variant="tonal" rounded="lg" class="mb-4">
+                {{ authStore.error.message }}
+              </v-alert>
+
+              <v-form v-model="valid" @submit.prevent="handleSubmit">
+                <v-text-field
+                  v-model="email"
+                  :rules="emailRules"
+                  label="Email Address"
+                  prepend-inner-icon="mdi-email-outline"
+                  variant="outlined"
+                  class="mb-3"
+                  required
+                />
+                <v-text-field
+                  v-model="password"
+                  :rules="passwordRules"
+                  label="Password"
+                  prepend-inner-icon="mdi-lock-outline"
+                  :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                  :type="showPassword ? 'text' : 'password'"
+                  variant="outlined"
+                  class="mb-5"
+                  required
+                  @click:append-inner="showPassword = !showPassword"
+                />
+
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  size="large"
+                  block
+                  rounded="lg"
+                  :loading="loading"
+                  :disabled="!valid"
+                  prepend-icon="mdi-login"
+                >Sign In</v-btn>
+              </v-form>
+
+              <v-divider class="my-5" />
+              <p class="text-center text-body-2 text-medium-emphasis">
+                Don't have an account?
+                <router-link to="/register" class="text-primary font-weight-medium">Register Here</router-link>
+              </p>
+            </v-card>
+          </v-col>
+
+        </v-row>
+      </v-container>
+    </v-main>
+  </v-app>
+</template>

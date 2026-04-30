@@ -184,21 +184,23 @@ async function handleSubmit() {
   try {
     const user = authStore.user
     const membership = await feathersClient.service('Club Membership').find({
-      query: { userid: user.user_id, is_active: true, $limit: 1 }
+      query: { 'user': user.id, is_active: true, $limit: 1 }
     })
     const rows = membership.data ?? membership
-    const clubId = rows[0]?.clubid
+    const clubId = rows[0]?.club
 
+    // Submit to Form Submission — template ID for P-Card should be set by Daxton
+    // For now we use category 'pcard' to find the right template
     await feathersClient.service('p-card-requests').create({
       club: clubId,
-      requested_by: user.user_id,
+      submitted_by: user.id,
       ...p1.value,
       ...p2.value,
       ...p3.value,
       ...p4.value,
       ...p5.value,
       ...p6.value,
-      vendors: vendors.value,
+      vendors: JSON.stringify(vendors.value),
       ...p8.value,
       ...p9.value,
       ...p10.value,

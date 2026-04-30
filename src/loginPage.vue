@@ -31,7 +31,7 @@ async function handleSubmit() {
     authStore.clearError()
     const res = await authStore.authenticate({
       strategy: 'local',
-      email: email.value,
+      school_email: email.value,
       password: password.value,
     })
     if (res) {
@@ -39,12 +39,6 @@ async function handleSubmit() {
       userStore.setId(res.User?.id)
       userStore.setFirstName(res.User?.first_name)
       userStore.setLastName(res.User?.last_name)
-      userStore.setProfilePhotoUrl(res.User?.profile_photo_url)
-      userStore.setBio(res.User?.bio)
-      userStore.setFacebookUrl(res.User?.facebook_url)
-      userStore.setInstagramUrl(res.User?.instagram_url)
-      userStore.setLinkedInUrl(res.User?.linkedin_url)
-      userStore.setTwitterUrl(res.User?.twitter_url)
     }
     const redirectTo = authStore.loginRedirect || '/dashboard'
     authStore.loginRedirect = null
@@ -70,7 +64,7 @@ async function handleSubmit() {
               rounded="lg"
               elevation="0"
               class="pa-10 d-flex flex-column justify-center"
-              style="height: 500px; width: 100%;"
+              style="height: 480px; width: 100%;"
             >
               <v-icon size="48" color="white" class="mb-6">mdi-account-group</v-icon>
               <h1 class="text-h3 font-weight-bold text-white mb-4">Welcome<br/>Back.</h1>
@@ -81,9 +75,9 @@ async function handleSubmit() {
           </v-col>
 
           <!-- Login form -->
-          <v-col class="d-flex flex-column" cols="12" md="5">
-            <v-card rounded="lg" elevation="2" class="pa-8 d-flex flex-column" style="height: 500px;">
-              <div class="mb-5">
+          <v-col cols="12" md="5">
+            <v-card rounded="lg" elevation="2" class="pa-8" style="height: 480px;">
+              <div class="mb-6">
                 <h2 class="text-h5 font-weight-bold mb-1">Sign In</h2>
                 <p class="text-medium-emphasis">Enter your UNR credentials to continue.</p>
               </div>
