@@ -180,5 +180,6 @@ function resetForm() {
     <v-snackbar v-model="errorSnackbar" color="error" timeout="4000">
       <v-icon start>mdi-alert-circle</v-icon> {{ errorMessage }}
     </v-snackbar>
+  </v-container>
   </DashboardLayout>
 </template>
