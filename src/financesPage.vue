@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { downloadTransactionPDF, downloadTransactionReportPDF } from '@/formPDF'
+import useClubStore from '@/stores/clubStore'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const clubStore = useClubStore()
 const transactions = ref<any[]>([])
 const loading = ref(false)
 const addDialog = ref(false)
@@ -186,9 +189,19 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
           <h1 class="text-h4 font-weight-bold">Club Finances</h1>
           <p class="text-medium-emphasis mt-1">Track income, expenses, and your club's balance.</p>
         </div>
-        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" @click="addDialog = true">
-          Add Transaction
-        </v-btn>
+        <div class="d-flex" style="gap: 10px;">
+          <v-btn
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-file-chart-outline"
+            rounded="lg"
+            @click="downloadTransactionReportPDF(filteredTransactions, clubStore.name, { type: filterType, category: filterCategory, search: searchQuery })"
+            :disabled="filteredTransactions.length === 0"
+          >Download Report</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" @click="addDialog = true">
+            Add Transaction
+          </v-btn>
+        </div>
       </div>
 
       <!-- Summary Cards -->
@@ -300,6 +313,7 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be > 0.'
                   <span :class="['text-h6', 'font-weight-bold', tx.amount > 0 ? 'text-success' : 'text-error']">
                     {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
                   </span>
+                  <v-btn icon="mdi-receipt" size="small" variant="text" color="primary" @click="downloadTransactionPDF(tx, clubStore.name)" />
                   <v-btn icon="mdi-delete-outline" size="small" variant="text" color="grey" @click="confirmDelete(tx)" />
                 </div>
               </template>

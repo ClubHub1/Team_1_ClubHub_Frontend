@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { downloadResourceCheckoutPDF } from '@/formPDF'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
@@ -486,15 +487,24 @@ const allAcknowledged = computed(() => Object.values(ack.value).every(v => v))
           @click="nextStep"
         >Next</v-btn>
 
-        <v-btn
-          v-else
-          color="primary"
-          prepend-icon="mdi-send"
-          rounded="lg"
-          :loading="loading"
-          :disabled="!allAcknowledged"
-          @click="handleSubmit"
-        >Submit Request</v-btn>
+        <div class="d-flex" style="gap: 12px;">
+          <v-btn
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-download"
+            rounded="lg"
+            :disabled="!allAcknowledged"
+            @click="downloadResourceCheckoutPDF({ ...p1, ...ack, requested_items: selectedItems, quantity_notes: quantityNotes })"
+          >Download PDF</v-btn>
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-send"
+            rounded="lg"
+            :loading="loading"
+            :disabled="!allAcknowledged"
+            @click="handleSubmit"
+          >Submit Request</v-btn>
+        </div>
       </div>
 
     </v-container>

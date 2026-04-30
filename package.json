@@ -25,6 +25,7 @@
     "CHBackend": "http://backend:3030/CHBackend-0.0.5.tgz",
     "eslint-plugin-vuejs-accessibility": "^2.4.1",
     "feathers-pinia": "^3.0.7",
+    "jspdf": "^4.2.1",
     "pinia": "^2.3.1",
     "socket.io-client": "^4.8.1",
     "vite-plugin-vuetify": "^2.1.2",
