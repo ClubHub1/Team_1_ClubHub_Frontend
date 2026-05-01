@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import useClubStore from './stores/clubStore'
@@ -12,7 +12,7 @@ import financesPage from './financesPage.vue'
 import pCardRequest from './pCardRequest.vue'
 import travelRequest from './travelRequest.vue'
 import attendancePage from './attendancePage.vue'
-import { downloadPCardPDF, downloadTravelPDF, downloadResourceCheckoutPDF } from '@/formPDF'
+import { downloadPCardPDF, downloadTravelPDF, downloadResourceCheckoutPDF, normalizeResourceCheckoutItems } from '@/formPDF'
 import resourceCheckout from './resourceCheckouts.vue'
 
 const auth = useAuthStore()
@@ -57,6 +57,9 @@ const router = useRouter()
         await loadMembers()
 
     loadTasks();
+    if (selected.value === 'events') {
+      loadEvents()
+    }
 }
 
 async function loadMembers() {
@@ -152,14 +155,13 @@ interface ClubEvent {
 
 const sections = [
   { id: 'dashboard', label: 'Club Dashboard', icon: 'mdi-view-dashboard-variant-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
+  { id: 'events', label: 'Events', icon: 'mdi-calendar-month-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
   { id: 'createEvent', label: 'Create Event', icon: 'mdi-calendar-plus', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
-  { id: 'editEvents', label: 'Edit Events', icon: 'mdi-calendar-edit', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
   { id: 'createAnnouncement', label: 'Announcement', icon: 'mdi-bullhorn-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
   { id: 'members', label: 'Members', icon: 'mdi-account-multiple', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
   { id: 'finances', label: 'Finances', icon: 'mdi-cash-multiple', roles: ['advisor', 'president', 'treasurer'] },
   { id: 'tasks', label: 'Tasks', icon: 'mdi-clipboard-check-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
   { id: 'createTask', label: 'Create Task', icon: 'mdi-clipboard-plus-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
-  { id: 'editTask', label: 'Edit Tasks', icon: 'mdi-clipboard-edit-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary'] },
   { id: 'forms', label: 'Club Forms', icon: 'mdi-clipboard', roles: ['advisor', 'president', 'vice_pres', 'treasurer'] },
   { id: 'submissions', label: 'Form Submissions', icon: 'mdi-file-document-multiple-outline', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
   { id: 'attendance', label: 'Attendance', icon: 'mdi-account-check', roles: ['advisor', 'president', 'vice_pres', 'treasurer', 'secretary', 'member'] },
@@ -171,12 +173,12 @@ const dashboardCategories = [
   {
     title: 'Events',
     icon: 'mdi-calendar-month',
-    sectionIds: ['createEvent', 'editEvents', 'attendance'],
+    sectionIds: ['events', 'createEvent', 'attendance'],
   },
   {
     title: 'Tasks',
     icon: 'mdi-clipboard-check-outline',
-    sectionIds: ['tasks', 'createTask', 'editTask'],
+    sectionIds: ['tasks', 'createTask'],
   },
   {
     title: 'Forms & Submissions',
@@ -198,7 +200,11 @@ const activeDashboardCategories = computed(() => dashboardCategories
       .filter(Boolean),
   }))
   .filter(category => category.sections.length > 0))
-const selected = ref(route.query.section === 'tasks' ? 'tasks' : 'dashboard')
+const sectionIds = new Set(sections.map(section => section.id))
+const initialSection = typeof route.query.section === 'string' && sectionIds.has(route.query.section)
+  ? route.query.section
+  : 'dashboard'
+const selected = ref(initialSection)
 const settingsError = ref('')
 const settingsLoading = ref(false)
 const leaveClubDialog = ref(false)
@@ -353,10 +359,18 @@ async function loadTasks() {
 
 function handleNavClick(sectionId: string) {
   selected.value = sectionId
-  if (sectionId === 'tasks' || sectionId === 'editTask') loadTasks()
-  if (sectionId === 'editEvents') loadEvents()
+  if (sectionId === 'tasks') loadTasks()
+  if (sectionId === 'events') loadEvents()
   if (sectionId === 'submissions') loadSubmissions()
 }
+
+watch(
+  () => route.query.section,
+  (section) => {
+    if (typeof section !== 'string' || !sectionIds.has(section) || selected.value === section) return
+    handleNavClick(section)
+  },
+)
 
 // Edit task
 const editTaskForm = reactive({ id: null as number | null, title: '', description: '', priority: 'Medium', status: 'Not Started', due_date: '' })
@@ -450,12 +464,21 @@ async function loadEvents() {
     const res = await feathersClient.service('Event').find({
       query: { club: clubStore.id, $sort: { start_datetime: 1 }, $limit: 500 },
     })
-    events.value = res.data
+    events.value = res.data.map((event: any) => ({
+      ...event,
+      id: event.id ?? event.event_id,
+    }))
   } catch {
     eventsError.value = 'Failed to load events.'
   } finally {
     eventsLoading.value = false
   }
+}
+
+async function goToEventList() {
+  selected.value = 'events'
+  await router.replace({ path: '/clubDash', query: { section: 'events' } })
+  await loadEvents()
 }
 
 function selectEventForEdit(event: ClubEvent) {
@@ -552,6 +575,34 @@ const formTypeMap: Record<string, { icon: string; color: string }> = {
   'Resource Checkout':  { icon: 'mdi-package-variant-closed',    color: 'primary' },
 }
 
+function getSubmissionDateValue(submission: any, kind: 'created' | 'updated') {
+  const created = submission.created_at
+    ?? submission.createdAt
+    ?? submission.submitted_at
+    ?? submission.submittedAt
+    ?? submission.date_submitted
+    ?? submission.dateSubmitted
+    ?? submission.created
+
+  const updated = submission.updated_at
+    ?? submission.updatedAt
+    ?? submission.last_updated
+    ?? submission.lastUpdated
+    ?? submission.modified_at
+    ?? submission.modifiedAt
+
+  return kind === 'updated' ? (updated ?? created) : created
+}
+
+function formatSubmissionDate(value: unknown) {
+  if (!value) return 'Not recorded'
+
+  const date = new Date(String(value))
+  if (Number.isNaN(date.getTime())) return 'Not recorded'
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 async function loadSubmissions() {
   submissionsLoading.value = true
   try {
@@ -562,6 +613,7 @@ async function loadSubmissions() {
     ])
     const map = (arr: any[], type: string) => arr.map((r: any) => ({
       id: r.id ?? r._id,
+      rawSubmission: r,
       formName: type === 'P-Card Request' ? 'ASUN/CSE Credit Card Request'
                : type === 'Travel Request' ? 'ASUN/CSE Travel Request'
                : 'ASUN Club Resource Checkout',
@@ -570,8 +622,9 @@ async function loadSubmissions() {
       statusColor: r.status === 'Approved' ? 'success' : r.status === 'Rejected' ? 'error' : r.status === 'Returned' ? 'grey' : 'warning',
       progress: r.status === 'Approved' || r.status === 'Returned' ? 100 : 60,
       icon: formTypeMap[type].icon,
-      submittedDate: r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
-      lastUpdated: r.updated_at ? new Date(r.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
+      submittedDate: formatSubmissionDate(getSubmissionDateValue(r, 'created')),
+      lastUpdated: formatSubmissionDate(getSubmissionDateValue(r, 'updated')),
+      requestedItems: type === 'Resource Checkout' ? normalizeResourceCheckoutItems(r.requested_items) : '',
       comments: r.comments ?? [],
     }))
     submissions.value = [
@@ -607,6 +660,54 @@ async function postComment() {
   }
   selectedSubmission.value.comments.push(comment)
   newComment.value = ''
+}
+
+function downloadSubmissionPDF(submission: any) {
+  if (!submission?.rawSubmission) return
+
+  if (submission.formType === 'P-Card Request') {
+    downloadPCardPDF(submission.rawSubmission)
+  } else if (submission.formType === 'Travel Request') {
+    downloadTravelPDF(normalizeTravelSubmissionForPDF(submission.rawSubmission))
+  } else if (submission.formType === 'Resource Checkout') {
+    downloadResourceCheckoutPDF(normalizeResourceCheckoutSubmissionForPDF(submission.rawSubmission))
+  }
+}
+
+function parseSubmissionNotes(notes: unknown) {
+  if (!notes) return {}
+  if (typeof notes === 'object') return notes as Record<string, any>
+
+  try {
+    return JSON.parse(String(notes))
+  } catch {
+    return {}
+  }
+}
+
+function normalizeTravelSubmissionForPDF(submission: any) {
+  const notes = parseSubmissionNotes(submission.notes)
+  const fullName = notes.full_name || submission.full_name || ''
+  const [firstName = '', ...lastNameParts] = String(fullName).trim().split(/\s+/).filter(Boolean)
+
+  return {
+    ...submission,
+    club_name: submission.club_name || notes.club_name,
+    email: submission.email || notes.email,
+    first_name: submission.first_name || firstName,
+    last_name: submission.last_name || lastNameParts.join(' '),
+    transportation_type: submission.transportation_type || submission.transportation,
+    purpose: submission.purpose || submission.purpose_of_trip,
+    lodging_required: !!(submission.lodging || submission.lodging_details),
+    lodging_details: submission.lodging_details || submission.lodging,
+  }
+}
+
+function normalizeResourceCheckoutSubmissionForPDF(submission: any) {
+  return {
+    ...submission,
+    requested_items: normalizeResourceCheckoutItems(submission.requested_items),
+  }
 }
 
 const roleColors: Record<string, string> = {
@@ -686,19 +787,22 @@ const roleColors: Record<string, string> = {
             <h1 class="text-h4 font-weight-bold">Create Event</h1>
             <p class="text-medium-emphasis mt-1">Schedule a new event for your club members.</p>
           </div>
-          <club-events-page />
+          <club-events-page @view-events="goToEventList" />
         </div>
 
-        <!-- ─── Edit Events ─── -->
-        <div v-if="selected === 'editEvents'">
-          <div class="mb-6">
-            <h1 class="text-h4 font-weight-bold">Edit Events</h1>
-            <p class="text-medium-emphasis mt-1">Select an event to update or delete it.</p>
+        <!-- ─── Events View ─── -->
+        <div v-if="selected === 'events'">
+          <div class="d-flex align-center justify-space-between mb-6">
+            <div>
+              <h1 class="text-h4 font-weight-bold">Events</h1>
+              <p class="text-medium-emphasis mt-1">Select an event to view, update, or delete it.</p>
+            </div>
+            <v-btn size="small" variant="outlined" prepend-icon="mdi-refresh" @click="loadEvents">Refresh</v-btn>
           </div>
           <v-row>
             <v-col cols="12" md="5">
               <v-card elevation="2" rounded="lg" height="100%">
-                <v-card-title class="px-6 pt-5 pb-2 text-h6">Select an Event</v-card-title>
+                <v-card-title class="px-6 pt-5 pb-2 text-h6">All Events</v-card-title>
                 <v-card-text class="pa-0">
                   <v-alert v-if="eventsError" type="error" variant="tonal" class="ma-4">{{ eventsError }}</v-alert>
                   <div v-if="eventsLoading" class="pa-6">
@@ -716,6 +820,10 @@ const roleColors: Record<string, string> = {
                       @click="selectEventForEdit(event)"
                     >
                       <template #append>
+                        <v-chip size="x-small" color="primary" variant="tonal" class="mr-2">
+                          <v-icon start size="14">mdi-map-marker-outline</v-icon>
+                          {{ event.location || 'No location' }}
+                        </v-chip>
                         <v-btn icon="mdi-delete" size="x-small" color="error" variant="text" @click.stop="deleteEvent(event.id)" />
                       </template>
                     </v-list-item>
@@ -870,26 +978,74 @@ const roleColors: Record<string, string> = {
           <div class="d-flex align-center justify-space-between mb-6">
             <div>
               <h1 class="text-h4 font-weight-bold">Tasks</h1>
-              <p class="text-medium-emphasis mt-1">Track outstanding tasks for your club.</p>
+              <p class="text-medium-emphasis mt-1">Select a task to view, update, or delete it.</p>
             </div>
             <v-btn size="small" variant="outlined" prepend-icon="mdi-refresh" @click="loadTasks">Refresh</v-btn>
           </div>
-          <v-alert v-if="tasksError" type="error" variant="tonal" rounded="lg" class="mb-4">{{ tasksError }}</v-alert>
-          <v-card elevation="2" rounded="lg">
-            <v-data-table :items="tasks" :loading="tasksLoading" loading-text="Loading tasks..." :headers="[{title:'Title',key:'title'},{title:'Priority',key:'priority'},{title:'Status',key:'status'},{title:'Days Left',key:'daysUntilDue'}]" density="compact">
-              <template #item.priority="{ item }">
-                <v-chip :color="priorityColor[item.priority] ?? 'grey'" size="x-small" variant="tonal">{{ item.priority }}</v-chip>
-              </template>
-              <template #item.status="{ item }">
-                <v-chip :color="statusColor[item.status] ?? 'grey'" size="x-small" variant="tonal">{{ item.status }}</v-chip>
-              </template>
-              <template #item.daysUntilDue="{ item }">
-                <v-chip :color="item.daysUntilDue === 'overdue' ? 'red' : Number(item.daysUntilDue) <= 3 ? 'orange' : 'green'" size="x-small" variant="tonal">
-                  {{ item.daysUntilDue === 'overdue' ? 'Overdue' : `${item.daysUntilDue}d` }}
-                </v-chip>
-              </template>
-            </v-data-table>
-          </v-card>
+          <v-row>
+            <v-col cols="12" md="5">
+              <v-card elevation="2" rounded="lg" height="100%">
+                <v-card-title class="px-6 pt-5 pb-2 text-h6">All Tasks</v-card-title>
+                <v-card-text class="pa-0">
+                  <v-alert v-if="tasksError" type="error" variant="tonal" class="ma-4">{{ tasksError }}</v-alert>
+                  <div v-if="tasksLoading" class="pa-6">
+                    <v-skeleton-loader v-for="i in 3" :key="i" type="list-item-two-line" class="mb-2" />
+                  </div>
+                  <v-list v-else lines="two" nav>
+                    <v-list-item
+                      v-for="task in tasks" :key="task.id"
+                      :title="task.title" :subtitle="task.status"
+                      :active="selectedTask?.id === task.id"
+                      base-color="primary" rounded="lg"
+                      @click="selectTaskForEdit(task)"
+                    >
+                      <template #append>
+                        <v-chip :color="priorityColor[task.priority] ?? 'grey'" size="x-small" variant="tonal" class="mr-2">{{ task.priority }}</v-chip>
+                        <v-chip :color="task.daysUntilDue === 'overdue' ? 'red' : Number(task.daysUntilDue) <= 3 ? 'orange' : 'green'" size="x-small" variant="tonal" class="mr-2">
+                          {{ task.daysUntilDue === 'overdue' ? 'Overdue' : `${task.daysUntilDue}d` }}
+                        </v-chip>
+                        <v-btn icon="mdi-delete" size="x-small" color="error" variant="text" @click.stop="deleteTask(task.id)" />
+                      </template>
+                    </v-list-item>
+                    <v-list-item v-if="tasks.length === 0 && !tasksLoading">
+                      <v-list-item-title class="text-medium-emphasis">No tasks found for this club.</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-card-text>
+              </v-card>
+            </v-col>
+            <v-col cols="12" md="7">
+              <v-card elevation="2" rounded="lg" height="100%">
+                <v-card-text class="pa-6">
+                  <div v-if="!selectedTask" class="text-center py-10">
+                    <v-icon size="48" color="grey-lighten-1">mdi-cursor-pointer</v-icon>
+                    <p class="text-medium-emphasis mt-3">Select a task on the left to edit it.</p>
+                  </div>
+                  <div v-else>
+                    <p class="text-h6 font-weight-bold mb-4">Editing: {{ selectedTask.title }}</p>
+                    <v-alert v-if="editTaskSuccess" type="success" variant="tonal" rounded="lg" class="mb-4" closable @click:close="editTaskSuccess = ''">{{ editTaskSuccess }}</v-alert>
+                    <v-alert v-if="editTaskError" type="error" variant="tonal" rounded="lg" class="mb-4">{{ editTaskError }}</v-alert>
+                    <v-form v-model="editTaskValid" @submit.prevent="saveTaskEdit">
+                      <v-text-field v-model="editTaskForm.title" label="Title" :rules="[v => !!v || 'Title is required']" prepend-inner-icon="mdi-format-title" variant="outlined" class="mb-3" required />
+                      <v-textarea v-model="editTaskForm.description" label="Description" prepend-inner-icon="mdi-text-box" variant="outlined" rows="3" class="mb-3" />
+                      <v-row>
+                        <v-col cols="12" sm="6">
+                          <v-select v-model="editTaskForm.priority" :items="taskPriorities" label="Priority" prepend-inner-icon="mdi-flag-outline" variant="outlined" />
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                          <v-select v-model="editTaskForm.status" :items="taskStatuses" label="Status" prepend-inner-icon="mdi-list-status" variant="outlined" />
+                        </v-col>
+                      </v-row>
+                      <v-text-field v-model="editTaskForm.due_date" label="Due Date" type="date" prepend-inner-icon="mdi-calendar" variant="outlined" class="mb-4" />
+                      <div class="d-flex justify-end">
+                        <v-btn type="submit" color="primary" rounded="lg" :loading="editTaskLoading" prepend-icon="mdi-content-save">Save Changes</v-btn>
+                      </div>
+                    </v-form>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
         </div>
 
         <!-- ─── Create Task ─── -->
@@ -948,72 +1104,6 @@ const roleColors: Record<string, string> = {
               </v-card-actions>
             </v-card>
           </v-dialog>
-        </div>
-
-        <!-- ─── Edit Tasks ─── -->
-        <div v-if="selected === 'editTask'">
-          <div class="mb-6">
-            <h1 class="text-h4 font-weight-bold">Edit Tasks</h1>
-            <p class="text-medium-emphasis mt-1">Select a task to update or delete it.</p>
-          </div>
-          <v-row>
-            <v-col cols="12" md="5">
-              <v-card elevation="2" rounded="lg" height="100%">
-                <v-card-title class="px-6 pt-5 pb-2 text-h6">Select a Task</v-card-title>
-                <v-card-text class="pa-0">
-                  <v-alert v-if="tasksError" type="error" variant="tonal" class="ma-4">{{ tasksError }}</v-alert>
-                  <v-list lines="two" nav>
-                    <v-list-item
-                      v-for="task in tasks" :key="task.id"
-                      :title="task.title" :subtitle="task.status"
-                      :active="selectedTask?.id === task.id"
-                      base-color="primary" rounded="lg"
-                      @click="selectTaskForEdit(task)"
-                    >
-                      <template #append>
-                        <v-chip :color="priorityColor[task.priority] ?? 'grey'" size="x-small" variant="tonal" class="mr-2">{{ task.priority }}</v-chip>
-                        <v-btn icon="mdi-delete" size="x-small" color="error" variant="text" @click.stop="deleteTask(task.id)" />
-                      </template>
-                    </v-list-item>
-                    <v-list-item v-if="tasks.length === 0 && !tasksLoading">
-                      <v-list-item-title class="text-medium-emphasis">No tasks found for this club.</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-card-text>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="7">
-              <v-card elevation="2" rounded="lg" height="100%">
-                <v-card-text class="pa-6">
-                  <div v-if="!selectedTask" class="text-center py-10">
-                    <v-icon size="48" color="grey-lighten-1">mdi-cursor-pointer</v-icon>
-                    <p class="text-medium-emphasis mt-3">Select a task on the left to edit it.</p>
-                  </div>
-                  <div v-else>
-                    <p class="text-h6 font-weight-bold mb-4">Editing: {{ selectedTask.title }}</p>
-                    <v-alert v-if="editTaskSuccess" type="success" variant="tonal" rounded="lg" class="mb-4" closable @click:close="editTaskSuccess = ''">{{ editTaskSuccess }}</v-alert>
-                    <v-alert v-if="editTaskError" type="error" variant="tonal" rounded="lg" class="mb-4">{{ editTaskError }}</v-alert>
-                    <v-form v-model="editTaskValid" @submit.prevent="saveTaskEdit">
-                      <v-text-field v-model="editTaskForm.title" label="Title" :rules="[v => !!v || 'Title is required']" prepend-inner-icon="mdi-format-title" variant="outlined" class="mb-3" required />
-                      <v-textarea v-model="editTaskForm.description" label="Description" prepend-inner-icon="mdi-text-box" variant="outlined" rows="3" class="mb-3" />
-                      <v-row>
-                        <v-col cols="6">
-                          <v-select v-model="editTaskForm.priority" :items="taskPriorities" label="Priority" prepend-inner-icon="mdi-flag-outline" variant="outlined" />
-                        </v-col>
-                        <v-col cols="6">
-                          <v-select v-model="editTaskForm.status" :items="taskStatuses" label="Status" prepend-inner-icon="mdi-list-status" variant="outlined" />
-                        </v-col>
-                      </v-row>
-                      <v-text-field v-model="editTaskForm.due_date" label="Due Date" type="date" prepend-inner-icon="mdi-calendar" variant="outlined" class="mb-4" />
-                      <div class="d-flex justify-end">
-                        <v-btn type="submit" color="primary" rounded="lg" :loading="editTaskLoading" prepend-icon="mdi-content-save">Save Changes</v-btn>
-                      </div>
-                    </v-form>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
         </div>
 
         <!-- ─── Attendance ─── -->
@@ -1124,6 +1214,14 @@ const roleColors: Record<string, string> = {
                         <span class="text-caption">{{ sub.submittedDate }}</span>
                       </v-list-item-subtitle>
                       <template #append>
+                        <v-btn
+                          icon="mdi-download"
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          aria-label="Download submitted form PDF"
+                          @click.stop="downloadSubmissionPDF(sub)"
+                        />
                         <v-icon size="16" color="grey">mdi-chevron-right</v-icon>
                       </template>
                     </v-list-item>
@@ -1143,9 +1241,21 @@ const roleColors: Record<string, string> = {
                 <!-- Detail Card -->
                 <v-card elevation="2" rounded="lg" class="mb-4">
                   <v-card-text class="pa-5">
-                    <div class="d-flex align-center justify-space-between mb-4">
-                      <h3 class="text-h6 font-weight-bold">{{ selectedSubmission.formName }}</h3>
-                      <v-chip :color="selectedSubmission.statusColor" variant="tonal" size="small">{{ selectedSubmission.status }}</v-chip>
+                    <div class="d-flex align-start justify-space-between ga-3 mb-4">
+                      <div>
+                        <h3 class="text-h6 font-weight-bold">{{ selectedSubmission.formName }}</h3>
+                        <v-chip :color="selectedSubmission.statusColor" variant="tonal" size="small">{{ selectedSubmission.status }}</v-chip>
+                      </div>
+                      <v-btn
+                        color="primary"
+                        variant="tonal"
+                        rounded="lg"
+                        size="small"
+                        prepend-icon="mdi-download"
+                        @click="downloadSubmissionPDF(selectedSubmission)"
+                      >
+                        PDF
+                      </v-btn>
                     </div>
 
                     <p class="text-overline text-primary mb-2">Progress</p>
@@ -1169,6 +1279,10 @@ const roleColors: Record<string, string> = {
                     <div class="d-flex align-center ga-2">
                       <v-icon size="16" color="grey">mdi-file-outline</v-icon>
                       <span class="text-body-2">Form type: {{ selectedSubmission.formType }}</span>
+                    </div>
+                    <div v-if="selectedSubmission.formType === 'Resource Checkout'" class="d-flex align-start ga-2 mt-2">
+                      <v-icon size="16" color="grey" class="mt-1">mdi-package-variant-closed</v-icon>
+                      <span class="text-body-2">Requested items: {{ selectedSubmission.requestedItems }}</span>
                     </div>
                   </v-card-text>
                 </v-card>

@@ -18,6 +18,7 @@ const allTags = ref(['Sports', 'Technology', 'Arts', 'Community', 'Academic',
 const headers = [
   { title: 'Club Name', key: 'name', sortable: true },
   { title: 'Status', key: 'activity_status', sortable: true },
+  { title: 'Tags', key: 'tags', sortable: false },
   { title: 'Description', key: 'description', sortable: false },
 ]
 
@@ -36,9 +37,14 @@ onMounted(async () => {
 const filteredClubs = computed(() => {
   return clubs.value.filter(club => {
     const q = searchQuery.value.toLowerCase()
-    const matchSearch = !q || club.name?.toLowerCase().includes(q) || club.description?.toLowerCase().includes(q)
+    const tags = normalizeTags(club.tags)
+    const matchSearch = !q ||
+      club.name?.toLowerCase().includes(q) ||
+      club.description?.toLowerCase().includes(q) ||
+      tags.some(tag => tag.toLowerCase().includes(q))
     const matchStatus = selectedStatus.value.length === 0 || selectedStatus.value.includes(club.activity_status)
-    return matchSearch && matchStatus
+    const matchTags = selectedTags.value.length === 0 || selectedTags.value.some(tag => tags.includes(tag))
+    return matchSearch && matchStatus && matchTags
   })
 })
 
@@ -48,6 +54,12 @@ function clearFilters() {
   selectedStatus.value = []
   selectedTags.value = []
   searchQuery.value = ''
+}
+
+function normalizeTags(tags: unknown): string[] {
+  if (Array.isArray(tags)) return tags.filter(Boolean).map(String)
+  if (typeof tags === 'string') return tags.split(',').map(tag => tag.trim()).filter(Boolean)
+  return []
 }
 </script>
 
@@ -160,6 +172,19 @@ function clearFilters() {
                     size="small"
                     variant="tonal"
                   >{{ item.activity_status }}</v-chip>
+                </template>
+
+                <template #item.tags="{ item }">
+                  <div v-if="normalizeTags(item.tags).length" class="d-flex flex-wrap ga-1 py-1">
+                    <v-chip
+                      v-for="tag in normalizeTags(item.tags)"
+                      :key="tag"
+                      size="x-small"
+                      color="primary"
+                      variant="tonal"
+                    >{{ tag }}</v-chip>
+                  </div>
+                  <span v-else class="text-body-2 text-disabled">—</span>
                 </template>
 
                 <template #item.description="{ item }">

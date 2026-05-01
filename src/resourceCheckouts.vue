@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { downloadResourceCheckoutPDF } from '@/formPDF'
-import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
 import { useAuthStore } from '@/stores/auth'
+import useUserStore from './stores/user'
+import useClubStore from './stores/clubStore'
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
@@ -101,15 +101,15 @@ async function handleSubmit() {
   loading.value = true
   try {
     const user = authStore.user
-    const membership = await feathersClient.service('Club Membership').find({
-      query: { userid: user.user_id, is_active: true, $limit: 1 }
+    const membership = await feathersClient.service('ClubMembership').find({
+      query: { userid: useUserStore().id, is_active: true, $limit: 1 }
     })
     const rows = membership.data ?? membership
     const clubId = rows[0]?.clubid
 
     await feathersClient.service('resource-checkouts').create({
-      club: clubId,
-      requested_by: user.user_id,
+      club: useClubStore().id,
+      submitted_by: useUserStore().id,
       ...p1.value,
       requested_items: selectedItems.value,
       quantity_notes: quantityNotes.value,
@@ -137,7 +137,6 @@ const allAcknowledged = computed(() => Object.values(ack.value).every(v => v))
 
       <!-- Page Header -->
       <div class="mb-6">
-        <v-btn variant="text" prepend-icon="mdi-arrow-left" class="mb-2 pl-0" @click="router.back()">Back</v-btn>
         <h1 class="text-h4 font-weight-bold">Club Resource Checkout</h1>
         <p class="text-medium-emphasis mt-1">ASUN Club Resource Checkout Request</p>
       </div>

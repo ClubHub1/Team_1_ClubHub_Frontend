@@ -27,8 +27,15 @@ const router = useRouter()
     //Store user inputs to be passed to create()
     const club_name = ref('')
     const club_description = ref('')
+    const club_tags = ref<string[]>([])
     const logo_file = ref<File | null>(null)
     const logo_preview = ref<string>('')
+    const allTags = [
+      'Sports', 'Technology', 'Arts', 'Community', 'Academic',
+      'Competitive', 'Volunteering', 'Gaming', 'Coding', 'Music',
+      'Strategy', 'Leadership', 'Cultural', 'Health & Wellness', 'Engineering',
+      'Business', 'Science', 'Pre-Med', 'Law', 'Environmental'
+    ]
 
     //RULES FOR FORM
 
@@ -37,6 +44,9 @@ const nameRules = [
 ]
 const descRules = [
   (v: string) => (!!v && v.length < 750) || 'Required, max 750 characters.',
+]
+const tagRules = [
+  (v: string[]) => (!!v && v.length > 0) || 'Select at least one tag.',
 ]
 
     const logoRules = [
@@ -122,6 +132,7 @@ function refreshRules() {
           const newClub = await feathersClient.service("Club")._create({
             name: club_name.value,
             description: club_description.value,
+            tags: club_tags.value,
             created_at: nowString,
             activity_status: 'Active',
             ...(logoUrl && { logo_url: logoUrl }) // Add logo_url if upload succeeded
@@ -181,7 +192,7 @@ Method to auto-refresh form validity rules
   <v-app>
     <v-main style="background: #f5f5f5;">
       <v-container class="d-flex align-center justify-center py-10">
-        <v-row justify="center" align="start" style="width: 100%;">
+        <v-row justify="center" align="stretch" style="width: 100%;">
 
           <!-- Left accent panel -->
           <v-col cols="12" md="5" class="d-none d-md-flex">
@@ -189,7 +200,7 @@ Method to auto-refresh form validity rules
               color="primary"
               rounded="lg"
               elevation="0"
-              class="pa-10 d-flex flex-column justify-center"
+              class="pa-10 d-flex flex-column justify-center h-100"
               style="min-height: 500px; width: 100%;"
             >
               <v-icon size="48" color="white" class="mb-6">mdi-trophy</v-icon>
@@ -229,6 +240,21 @@ Method to auto-refresh form validity rules
                   variant="outlined"
                   rows="6"
                   counter="750"
+                  class="mb-5"
+                  required
+                />
+
+                <v-autocomplete
+                  v-model="club_tags"
+                  :items="allTags"
+                  :rules="tagRules"
+                  label="Club Tags"
+                  prepend-inner-icon="mdi-tag-multiple"
+                  variant="outlined"
+                  multiple
+                  chips
+                  closable-chips
+                  clearable
                   class="mb-5"
                   required
                 />

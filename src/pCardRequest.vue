@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { downloadPCardPDF } from '@/formPDF'
-import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/dashboardLayout.vue'
 import { feathersClient } from '@/backendAPI'
 import useUserStore from './stores/user'
 import useClubStore from './stores/clubStore'
 
-const router = useRouter()
 const userStore = useUserStore()
 const clubStore = useClubStore()
 
@@ -188,6 +186,7 @@ function formatFundingSources(sources: string[]) {
 async function handleSubmit() {
   loading.value = true
   try {
+    const now = new Date().toISOString()
     const userId = userStore.id
     const selectedClubId = clubStore.id
     const membership = await feathersClient.service('ClubMembership').find({
@@ -199,6 +198,8 @@ async function handleSubmit() {
     await feathersClient.service('p-card-requests').create({
       club: clubId,
       submitted_by: userId,
+      created_at: now,
+      updated_at: now,
       ...p1.value,
       funding_sources: formatFundingSources(p1.value.funding_sources),
       ...p2.value,
@@ -233,13 +234,12 @@ const positiveNumber = (v: any) => (!!v && Number(v) > 0) || 'Must be a positive
 
       <!-- Page Header -->
       <div class="mb-6">
-        <v-btn variant="text" prepend-icon="mdi-arrow-left" class="mb-2 pl-0" @click="router.back()">Back</v-btn>
         <h1 class="text-h4 font-weight-bold">P-Card Request</h1>
         <p class="text-medium-emphasis mt-1">ASUN/CSE Credit Card Request Form FY 25-26</p>
       </div>
 
       <!-- Step Progress -->
-      <v-card elevation="1" rounded="lg" class="pa-4 mb-5">
+      <v-card v-if="!submitted" elevation="1" rounded="lg" class="pa-4 mb-5">
         <div class="d-flex align-center justify-space-between">
           <span class="text-body-2 text-medium-emphasis">Step {{ currentStep + 1 }} of {{ totalSteps }}</span>
           <v-chip color="primary" variant="tonal" size="small">{{ allSteps[currentStep] === 'main' ? 'Credit Card Request' : steps.find(s => s.id === currentStepId)?.title ?? '' }}</v-chip>

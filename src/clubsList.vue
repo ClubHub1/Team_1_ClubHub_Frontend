@@ -14,6 +14,12 @@ const loading = ref(true)
 const error = ref(null)
 const router = useRouter()
 
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) return tags.filter(Boolean).map(String)
+  if (typeof tags === 'string') return tags.split(',').map(tag => tag.trim()).filter(Boolean)
+  return []
+}
+
 async function fetchClubs() {
   try {
     const res = await feathersClient.service('ClubMembership').find({
@@ -48,12 +54,12 @@ onMounted(fetchClubs)
   <v-container class="py-8" max-width="1000">
 
     <!-- Page Header -->
-    <div class="d-flex align-center justify-space-between mb-6">
-      <div>
+    <div class="clubs-list-header d-flex align-center justify-space-between mb-6">
+      <div class="clubs-list-heading">
         <h1 class="text-h4 font-weight-bold">Your Clubs</h1>
         <p class="text-medium-emphasis mt-1">Manage and access your club organizations.</p>
       </div>
-      <v-btn color="primary" rounded="lg" prepend-icon="mdi-plus" to="/registerClub">
+      <v-btn class="register-club-button" color="primary" rounded="lg" prepend-icon="mdi-plus" to="/registerClub">
         Register New Club
       </v-btn>
     </div>
@@ -75,14 +81,15 @@ onMounted(fetchClubs)
     </v-card>
 
     <!-- Club Cards -->
-    <v-row v-else>
+    <v-row v-else align="stretch">
       <v-col
         v-for="(club, index) in clubs"
-        :key="index"
+        :key="club.club_id"
         cols="12" sm="6" md="4"
+        class="d-flex"
       >
-        <v-card rounded="lg" elevation="2" class="d-flex flex-column" style="height: 350px;">
-          <v-card-text class="flex-grow-1 pa-5">
+        <v-card rounded="lg" elevation="2" class="d-flex flex-column w-100" style="min-height: 350px;">
+          <v-card-text class="pa-5">
             <div class="d-flex align-start mb-3">
               <v-avatar color="primary" variant="tonal" size="40" class="mr-3 mt-1">
                 <v-icon color="primary">mdi-account-group</v-icon>
@@ -97,18 +104,29 @@ onMounted(fetchClubs)
             <p class="text-body-2 text-medium-emphasis" style="overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
               {{ club.description || 'No description provided.' }}
             </p>
+            <div v-if="normalizeTags(club.tags).length" class="d-flex flex-wrap ga-1 mt-3">
+              <v-chip
+                v-for="tag in normalizeTags(club.tags)"
+                :key="tag"
+                size="x-small"
+                color="primary"
+                variant="tonal"
+              >{{ tag }}</v-chip>
+            </div>
           </v-card-text>
-          <v-img v-if="club.logo_url" class="mx-auto mb-5" rounded="lg"
+          <v-spacer />
+          <v-img v-if="club.logo_url" class="mx-auto mb-5 flex-grow-0" rounded="lg"
             :width="200"
-            :max-height="300"
+            height="120"
+            cover
             :src="`http://localhost:42063${club.logo_url}`"
             ></v-img>
             <v-icon v-else 
-                class="mb-15 mx-auto"
+                class="mb-10 mx-auto flex-grow-0"
                 icon="mdi-image-off-outline"
                 size="x-large"
             ></v-icon>
-          <v-card-actions class="pa-4 pt-0">
+          <v-card-actions class="pa-4 pt-0 flex-grow-0">
             <v-spacer />
             <v-btn color="primary" variant="flat" rounded="lg" size="small" prepend-icon="mdi-cog" @click="goToManage(index)">
               Manage
@@ -120,3 +138,28 @@ onMounted(fetchClubs)
 
   </v-container>
 </template>
+
+<style scoped>
+.clubs-list-header {
+  gap: 16px;
+}
+
+.clubs-list-heading {
+  min-width: 0;
+}
+
+.register-club-button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 599.98px) {
+  .clubs-list-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .register-club-button {
+    width: 100%;
+  }
+}
+</style>

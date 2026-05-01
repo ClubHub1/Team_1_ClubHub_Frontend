@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
 import { feathersClient } from '@/backendAPI'
 import useClubStore from '@/stores/clubStore'
 
 const clubStore = useClubStore()
-const router = useRouter()
+const emit = defineEmits(['view-events'])
 const loading = ref(false)
 const error = ref('')
 const success = ref(false)
@@ -61,7 +60,7 @@ function keepCreatingEvents() {
 function goToEventList() {
   eventCreationDialog.value = false
   success.value = false
-  router.push({ path: '/events', query: { club: String(clubStore.id) } })
+  emit('view-events')
 }
 </script>
 

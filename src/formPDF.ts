@@ -6,6 +6,90 @@ const MED_GRAY = '#666666'
 const BLACK = '#111111'
 const WHITE = '#ffffff'
 
+const RESOURCE_CHECKOUT_ITEM_LABELS: Record<string, string> = {
+  first_aid_kit: 'Basic First Aid Kit',
+  extension_cord: 'Extension Cord',
+  megaphone: 'Megaphone',
+  recycling_bin: 'Recycling Bin',
+  traffic_cones: 'Traffic Cones',
+  small_cones: 'Small Cones',
+  disposable_masks: 'Disposable Masks',
+  hand_sanitizer: 'Hand Sanitizer',
+  paper_towels: 'Paper Towels',
+  large_ice_cooler: 'Large Ice Cooler (2)',
+  small_cooler: 'Small Cooler',
+  beverage_cooler: 'Beverage Cooler (3)',
+  popcorn_machine: 'Popcorn Machine',
+  chafing_dish: 'Chafing Dish (4)',
+  crock_pot: 'Crock Pot (2)',
+  fire_extinguisher: 'Fire Extinguisher',
+  cotton_candy_machine: 'Cotton Candy Machine',
+  coffee_urn: 'Coffee Urn',
+  tarps: 'Tarps',
+  cornhole: 'Cornhole (3)',
+  giant_connect_4: 'Giant Connect 4',
+  spikeball: 'Spikeball (3)',
+  box_of_utensils: 'Box of Utensils',
+  water_kettle: 'Water Kettle',
+  decibel_meter: 'Decibel Meter',
+}
+
+function parseResourceItemString(value: string): string[] {
+  const trimmed = value.trim()
+  if (!trimmed) return []
+
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      return Array.isArray(parsed) ? parsed.map(String) : [trimmed]
+    } catch {
+      return [trimmed]
+    }
+  }
+
+  const withoutPgArrayBraces = trimmed.startsWith('{') && trimmed.endsWith('}')
+    ? trimmed.slice(1, -1)
+    : trimmed
+
+  return withoutPgArrayBraces
+    .match(/"((?:\\"|[^"])*)"|([^,]+)/g)?.map(item => item
+      .trim()
+      .replace(/^"|"$/g, '')
+      .replace(/\\"/g, '"')
+    )
+    .filter(Boolean) ?? []
+}
+
+function humanizeResourceItemId(value: string) {
+  return value
+    .replace(/[{}"]/g, '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase())
+}
+
+export function normalizeResourceCheckoutItems(value: unknown) {
+  const rawItems = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? parseResourceItemString(value)
+      : value
+        ? [value]
+        : []
+
+  const labels = rawItems
+    .map(item => {
+      if (item && typeof item === 'object') {
+        const record = item as Record<string, unknown>
+        return String(record.label ?? record.id ?? '').trim()
+      }
+      return String(item ?? '').trim()
+    })
+    .filter(Boolean)
+    .map(item => RESOURCE_CHECKOUT_ITEM_LABELS[item] ?? humanizeResourceItemId(item))
+
+  return labels.length ? labels.join(', ') : '—'
+}
+
 function addHeader(doc: jsPDF, title: string, subtitle: string) {
   // Navy header bar
   doc.setFillColor(PRIMARY)
@@ -248,9 +332,7 @@ export function downloadResourceCheckoutPDF(form: any) {
   y = checkPageBreak(doc, y)
 
   y = addSectionLabel(doc, 'Requested Items', y)
-  const items = Array.isArray(form.requested_items)
-    ? form.requested_items.join(', ')
-    : form.requested_items || '—'
+  const items = normalizeResourceCheckoutItems(form.requested_items)
   y = addField(doc, 'Items', items, 14, y)
   y = addField(doc, 'Quantity Notes', form.quantity_notes || '—', 14, y)
   y = checkPageBreak(doc, y)

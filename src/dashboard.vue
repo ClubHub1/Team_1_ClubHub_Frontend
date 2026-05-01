@@ -22,31 +22,33 @@ const userInitials = `${userStore.firstName?.[0] ?? ''}${userStore.lastName?.[0]
     <v-container max-width="1200" class="py-8">
 
       <!-- Page Header -->
-      <div class="d-flex align-center justify-space-between mb-2">
-        <div class="d-flex flex-column align-start">
-          <v-avatar :color="profilePhotoSrc ? 'transparent' : 'primary'" size="72" class="mb-4">
-            <img
-              v-if="profilePhotoSrc"
-              :src="profilePhotoSrc"
-              alt="Profile photo"
-              class="dashboard-profile-image"
-            />
-            <span v-else class="text-h5 text-white font-weight-bold">
-              {{ userInitials }}
-            </span>
-          </v-avatar>
-          <h1 class="text-h4 font-weight-bold">Hey there, {{ name }}!</h1>
-          <p class="text-medium-emphasis mt-1">Here's what's happening with your clubs today.</p>
+      <v-card elevation="1" rounded="lg" class="dashboard-header-card pa-5 mb-6">
+        <div class="d-flex align-center justify-space-between flex-wrap ga-4">
+          <div class="d-flex align-center">
+            <v-avatar :color="profilePhotoSrc ? 'transparent' : 'primary'" size="72" class="mr-4">
+              <img
+                v-if="profilePhotoSrc"
+                :src="profilePhotoSrc"
+                alt="Profile photo"
+                class="dashboard-profile-image"
+              />
+              <span v-else class="text-h5 text-white font-weight-bold">
+                {{ userInitials }}
+              </span>
+            </v-avatar>
+            <div class="d-flex flex-column align-start">
+              <h1 class="text-h4 font-weight-bold">Hey there, {{ name }}!</h1>
+              <p class="text-medium-emphasis mt-1 mb-0">Here's what's happening with your clubs today.</p>
+            </div>
+          </div>
+          <v-chip color="primary" variant="tonal" size="medium" rounded="lg" class="px-5 font-weight-medium">
+            {{ currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }) }}
+          </v-chip>
         </div>
-        <v-chip color="primary" variant="tonal" size="medium" rounded="lg" class="px-5 font-weight-medium">
-          {{ currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }) }}
-        </v-chip>
-      </div>
-
-      <v-divider class="mb-6" />
+      </v-card>
 
       <!-- Quick Nav to Clubs -->
-      <v-card elevation="1" rounded="lg" class="pa-4 mb-6">
+      <v-card elevation="1" rounded="lg" class="dashboard-organizations-card pa-4 mb-6">
         <div class="d-flex align-center gap-4">
           <v-avatar color="primary" variant="tonal" size="40">
             <v-icon color="primary">mdi-account-group</v-icon>
@@ -56,28 +58,28 @@ const userInitials = `${userStore.firstName?.[0] ?? ''}${userStore.lastName?.[0]
             <p class="text-caption text-medium-emphasis ma-0">Access and manage your clubs</p>
           </div>
           <v-btn color="primary" variant="flat" rounded="lg" size="small" prepend-icon="mdi-arrow-right" to="/clubsList">
-            View Your Clubs
+            <div class="hidden-sm-and-down">
+              View Your Clubs
+            </div>
           </v-btn>
         </div>
       </v-card>
 
       <!-- Dashboard Widgets -->
       <DashboardLayout>
-        <v-row>
-          <DashboardGrid>
-            <DashboardSection title="Upcoming Events" :md="4">
-              <EventList />
-            </DashboardSection>
+        <DashboardGrid>
+          <DashboardSection title="Upcoming Events" :md="4">
+            <EventList />
+          </DashboardSection>
 
-            <DashboardSection title="Tasks" :md="4">
-              <TaskList />
-            </DashboardSection>
+          <DashboardSection title="Tasks" :md="4">
+            <TaskList />
+          </DashboardSection>
 
-            <DashboardSection title="Notifications" :md="4">
-              <NotificationList />
-            </DashboardSection>
-          </DashboardGrid>
-        </v-row>
+          <DashboardSection title="Notifications" :md="4">
+            <NotificationList />
+          </DashboardSection>
+        </DashboardGrid>
       </DashboardLayout>
 
     </v-container>
@@ -90,5 +92,16 @@ const userInitials = `${userStore.firstName?.[0] ?? ''}${userStore.lastName?.[0]
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.dashboard-header-card {
+  background-color: #ededed;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.dashboard-organizations-card {
+  max-width: 900px;
+  margin-inline: auto;
 }
 </style>
