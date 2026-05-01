@@ -106,15 +106,19 @@ async function loadMembers() {
             })
 
     if (usersRes) {
-      const userData = usersRes.data
-      const nextMemberList = []
-      for (let i = 0; i < userData.length; i++) {
-        nextMemberList.push({
-          memberFName: userData[i].first_name, memberLName: userData[i].last_name,
-          memberEmail: userData[i].email, membershipID: memberArray[i].id, memberRole: memberArray[i].role,
-          memberPhotoUrl: userData[i].profile_photo_url,
-        })
-      }
+      const usersById = new Map(usersRes.data.map((user: any) => [String(user.id), user]))
+      const nextMemberList = memberArray.map((membership: any) => {
+        const user = usersById.get(String(membership.userid)) ?? {}
+        return {
+          memberFName: user.first_name,
+          memberLName: user.last_name,
+          memberEmail: user.email,
+          memberUserId: membership.userid,
+          membershipID: membership.id,
+          memberRole: membership.role,
+          memberPhotoUrl: user.profile_photo_url,
+        }
+      })
       memberList.value = nextMemberList
     }
   }
@@ -135,13 +139,14 @@ const emailRules = [
 
 onMounted(setPermissions)
 
-const roles = {
+const roles: Record<string, string> = {
   president: "President", 
   vice_pres: "Vice President",
   treasurer: "Treasurer",
   secretary: "Secretary", 
   member: "Member"
 }
+const roleOptions = ['president', 'vice_pres', 'treasurer', 'secretary', 'member']
 
 interface ClubEvent {
   id: number
@@ -561,7 +566,98 @@ async function addMember() {
   loading.value = false
 }
 
-function manageMember(id: number) { console.log('MANAGING MEMBER WITH MEMBERSHIP ID:', id) }
+const selectedManagedMember = ref<any>(null)
+const managedMemberRole = ref('')
+const memberManageLoading = ref(false)
+const memberManageError = ref('')
+const memberManageSuccess = ref('')
+const removeMemberDialog = ref(false)
+const isManagingSelf = computed(() => selectedManagedMember.value?.membershipID === memberStore.id)
+const canEditManagedMemberRole = computed(() => memberStore.role === 'president' && !isManagingSelf.value)
+
+function manageMember(member: any) {
+  selectedManagedMember.value = { ...member }
+  managedMemberRole.value = member.memberRole
+  memberManageError.value = ''
+  memberManageSuccess.value = ''
+  selected.value = 'memberManage'
+}
+
+async function saveManagedMemberRole() {
+  if (!selectedManagedMember.value || !managedMemberRole.value) return
+
+  if (memberStore.role !== 'president') {
+    memberManageError.value = 'Only the club president can change member roles.'
+    return
+  }
+
+  if (isManagingSelf.value) {
+    memberManageError.value = 'The club president cannot change their own role.'
+    return
+  }
+
+  memberManageLoading.value = true
+  memberManageError.value = ''
+  memberManageSuccess.value = ''
+
+  try {
+    if (managedMemberRole.value !== 'member') {
+      const res = await feathersClient.service('ClubMembership').find({
+        query: {
+          clubid: clubStore.id,
+          role: managedMemberRole.value,
+        },
+      })
+      if (res.data.some((membership: any) => membership.id !== selectedManagedMember.value.membershipID)) {
+        memberManageError.value = 'That officer role is already assigned to another member.'
+        return
+      }
+    }
+
+    await feathersClient.service('ClubMembership').patch(selectedManagedMember.value.membershipID, {
+      role: managedMemberRole.value,
+    })
+    selectedManagedMember.value.memberRole = managedMemberRole.value
+    if (selectedManagedMember.value.membershipID === memberStore.id) {
+      memberStore.setRole(managedMemberRole.value)
+    }
+    await loadMembers()
+    memberManageSuccess.value = 'Member role updated.'
+  } catch {
+    memberManageError.value = 'Failed to update member role. Please try again.'
+  } finally {
+    memberManageLoading.value = false
+  }
+}
+
+async function removeManagedMember() {
+  if (!selectedManagedMember.value) return
+
+  memberManageLoading.value = true
+  memberManageError.value = ''
+  memberManageSuccess.value = ''
+
+  try {
+    const removingSelf = selectedManagedMember.value.membershipID === memberStore.id
+    await feathersClient.service('ClubMembership').remove(selectedManagedMember.value.membershipID)
+    await loadMembers()
+    removeMemberDialog.value = false
+
+    if (removingSelf) {
+      memberStore.resetMember()
+      clubStore.resetClub()
+      router.push('/clubsList')
+      return
+    }
+
+    selectedManagedMember.value = null
+    selected.value = 'members'
+  } catch {
+    memberManageError.value = 'Failed to remove member. Please try again.'
+  } finally {
+    memberManageLoading.value = false
+  }
+}
 
 // ── Form Submissions ──
 const selectedSubmission = ref<any>(null)
@@ -925,10 +1021,95 @@ const roleColors: Record<string, string> = {
                 <v-chip :color="roleColors[item.memberRole] ?? 'grey'" size="small" variant="tonal">{{ item.memberRole }}</v-chip>
               </template>
               <template #item.actions="{ item }">
-                <v-btn icon="mdi-cog" size="small" variant="text" color="grey" @click="manageMember(item.membershipID)" />
+                <v-btn icon="mdi-cog" size="small" variant="text" color="grey" @click="manageMember(item)" />
               </template>
             </v-data-table>
           </v-card>
+        </div>
+
+        <!-- ─── Manage Member ─── -->
+        <div v-if="selected === 'memberManage'">
+          <div class="mb-6">
+            <v-btn variant="text" prepend-icon="mdi-arrow-left" class="mb-2 pl-0" @click="selected = 'members'">Back to Members</v-btn>
+            <h1 class="text-h4 font-weight-bold">Manage Member</h1>
+            <p class="text-medium-emphasis mt-1">Update this member's role or remove them from the club.</p>
+          </div>
+
+          <v-card v-if="selectedManagedMember" elevation="2" rounded="lg">
+            <v-card-text class="pa-6">
+              <div class="d-flex align-center ga-4 mb-6">
+                <v-avatar :color="selectedManagedMember.memberPhotoUrl ? 'transparent' : 'primary'" size="64" variant="tonal">
+                  <img
+                    v-if="selectedManagedMember.memberPhotoUrl"
+                    :src="getProfilePhotoSrc(selectedManagedMember.memberPhotoUrl)"
+                    :alt="`${selectedManagedMember.memberFName} ${selectedManagedMember.memberLName} profile photo`"
+                    class="member-avatar-image"
+                  />
+                  <span v-else class="text-h6 text-white font-weight-bold">
+                    {{ getMemberInitials(selectedManagedMember.memberFName, selectedManagedMember.memberLName) }}
+                  </span>
+                </v-avatar>
+                <div>
+                  <h2 class="text-h6 font-weight-bold mb-1">
+                    {{ selectedManagedMember.memberFName }} {{ selectedManagedMember.memberLName }}
+                  </h2>
+                  <p class="text-body-2 text-medium-emphasis ma-0">{{ selectedManagedMember.memberEmail }}</p>
+                </div>
+              </div>
+
+              <v-alert v-if="memberManageSuccess" type="success" variant="tonal" rounded="lg" class="mb-4" closable @click:close="memberManageSuccess = ''">
+                {{ memberManageSuccess }}
+              </v-alert>
+              <v-alert v-if="memberManageError" type="error" variant="tonal" rounded="lg" class="mb-4">
+                {{ memberManageError }}
+              </v-alert>
+              <v-alert v-if="!canEditManagedMemberRole" type="info" variant="tonal" rounded="lg" class="mb-4">
+                {{ isManagingSelf ? 'The club president cannot change their own role.' : 'Only the club president can change member roles.' }}
+              </v-alert>
+
+              <p class="text-overline text-primary mb-3">Member Role</p>
+              <div class="d-flex flex-wrap gap-2 mb-6">
+                <v-chip
+                  v-for="r in roleOptions"
+                  :key="r"
+                  :variant="managedMemberRole === r ? 'flat' : 'outlined'"
+                  :color="managedMemberRole === r ? (roleColors[r] ?? 'primary') : 'default'"
+                  :disabled="!canEditManagedMemberRole"
+                  :class="['ml-2', canEditManagedMemberRole ? 'cursor-pointer' : '']"
+                  @click="canEditManagedMemberRole && (managedMemberRole = r)"
+                >
+                  {{ roles[r] }}
+                </v-chip>
+              </div>
+
+              <v-divider class="mb-5" />
+
+              <div class="d-flex flex-wrap justify-space-between ga-3">
+                <v-btn color="error" variant="outlined" rounded="lg" prepend-icon="mdi-account-remove-outline" :disabled="memberManageLoading" @click="removeMemberDialog = true">
+                  Remove from Club
+                </v-btn>
+                <v-btn color="primary" rounded="lg" prepend-icon="mdi-content-save" :loading="memberManageLoading" :disabled="!canEditManagedMemberRole || managedMemberRole === selectedManagedMember.memberRole" @click="saveManagedMemberRole">
+                  Save Changes
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+
+          <v-dialog v-model="removeMemberDialog" max-width="480" persistent>
+            <v-card rounded="lg">
+              <v-card-title class="d-flex align-center ga-2">
+                <v-icon color="error">mdi-account-remove-outline</v-icon>
+                Remove Member
+              </v-card-title>
+              <v-card-text>
+                Remove <strong>{{ selectedManagedMember?.memberFName }} {{ selectedManagedMember?.memberLName }}</strong> from this club?
+              </v-card-text>
+              <v-card-actions class="justify-end">
+                <v-btn variant="text" color="grey" :disabled="memberManageLoading" @click="removeMemberDialog = false">Cancel</v-btn>
+                <v-btn color="error" rounded="lg" :loading="memberManageLoading" @click="removeManagedMember">Remove Member</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
         </div>
 
         <!-- ─── Add Member ─── -->
@@ -947,7 +1128,7 @@ const roleColors: Record<string, string> = {
                 <p class="text-overline text-primary mb-3">Assign Role</p>
                 <div class="d-flex flex-wrap gap-2 mb-5">
                   <v-chip
-                    v-for="r in ['president', 'vice_pres', 'treasurer', 'secretary', 'member']"
+                    v-for="r in roleOptions"
                     :key="r"
                     :variant="role === r ? 'flat' : 'outlined'"
                     :color="role === r ? (roleColors[r] ?? 'primary') : 'default'"
